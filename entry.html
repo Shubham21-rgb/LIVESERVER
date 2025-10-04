@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Task Input - Shubham Chakraborty</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      background: rgba(0,0,0,0.7);
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 0 40px rgba(0,255,255,0.3);
+      max-width: 600px;
+      width: 90%;
+      backdrop-filter: blur(10px);
+    }
+
+    h1, h2 {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    h1 { color: #00fff6; text-shadow: 0 0 10px #00fff6; }
+    h2 { color: #a0f0ff; font-size: 1.2rem; }
+
+    label { display: block; margin-bottom: 5px; font-weight: 700; color: #00fff6; }
+    input[type="text"], input[type="email"], input[type="number"], textarea {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      border: 1px solid #00fff6;
+      background: rgba(0,0,0,0.3);
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      transition: 0.3s;
+    }
+    input:focus, textarea:focus { border-color: #ff00ff; box-shadow: 0 0 10px #ff00ff; }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      font-size: 1rem;
+      font-weight: bold;
+      color: #fff;
+      background: linear-gradient(135deg, #ff00ff, #ff0080);
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 0 15px #ff00ff;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    button:hover { transform: translateY(-3px); box-shadow: 0 0 25px #ff00ff; }
+
+    .json-output, .api-response {
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 15px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      max-height: 250px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      color: #00ffdd;
+      margin-top: 20px;
+      box-shadow: 0 0 15px #00fff6;
+    }
+
+    .api-response { color: #ffdd57; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>AI Task Input</h1>
+    <h2>Shubham Chakraborty | IIT Madras</h2>
+
+    <form id="taskForm">
+      <label for="email">Student Email</label>
+      <input type="email" id="email" placeholder="student@example.com" required>
+
+      <label for="task">Task ID</label>
+      <input type="text" id="task" placeholder="captcha-solver-..." required>
+
+      <label for="round">Round</label>
+      <input type="number" id="round" value="1" min="1" required>
+
+      <label for="nonce">Nonce</label>
+      <input type="text" id="nonce" placeholder="ab12-..." required>
+
+      <label for="brief">Brief</label>
+      <textarea id="brief" placeholder="Describe what the app needs to do..." required></textarea>
+
+      <button type="submit">Submit Task</button>
+    </form>
+
+    <h3>JSON Being Sent:</h3>
+    <div class="json-output" id="jsonOutput">{ }</div>
+
+    <h3>API Response:</h3>
+    <div class="api-response" id="apiResponse">No response yet</div>
+  </div>
+
+  <script>
+    const form = document.getElementById('taskForm');
+    const output = document.getElementById('jsonOutput');
+    const apiResp = document.getElementById('apiResponse');
+
+    function getFormJSON() {
+      return {
+        email: document.getElementById('email').value,
+        task: document.getElementById('task').value,
+        round: parseInt(document.getElementById('round').value),
+        nonce: document.getElementById('nonce').value,
+        brief: document.getElementById('brief').value
+      };
+    }
+
+    function updateJSONPreview() {
+      output.textContent = JSON.stringify(getFormJSON(), null, 2);
+    }
+
+    form.addEventListener('input', updateJSONPreview);
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = getFormJSON();
+      apiResp.textContent = "Sending request...";
+
+      try {
+        const response = await fetch("/liveserver/endpoint", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(data)
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const result = await response.json();
+        apiResp.textContent = JSON.stringify(result, null, 2);
+
+      } catch (err) {
+        apiResp.textContent = `Error: ${err}`;
+      }
+    });
+
+    // initialize JSON preview
+    updateJSONPreview();
+  </script>
+
+</body>
+</html>
