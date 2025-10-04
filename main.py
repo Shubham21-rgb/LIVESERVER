@@ -64,10 +64,11 @@ client = OpenAI(api_key=api_key)
 
 
 
-
 @app.get("/")
 async def root():
-    return {"message": "Hello World its me Shubham"}
+    with open("index.html", "r") as f:
+        html_content = f.read()
+    return HTMLResponse(content=html_content, status_code=200)
 
 # OPTIONS preflight handler for /api/index
 @app.options("/api/index")
