@@ -391,7 +391,7 @@ async def compute_metrics(request: Request):
     model="gpt-4o-mini",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
     messages=[
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": body["task"]}
+        {"role": "user", "content": body["brief"]}
     ],
     temperature=0.4
     )
