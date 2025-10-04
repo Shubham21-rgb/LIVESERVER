@@ -245,7 +245,7 @@ async def task_input_page():
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Enter OTP</title>
+  <title>AI Task Input</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -257,143 +257,113 @@ async def task_input_page():
       margin: 0;
       color: #fff;
     }
-
-    .otp-container {
+    .task-container {
       background: rgba(255, 255, 255, 0.05);
       padding: 40px 50px;
       border-radius: 20px;
       box-shadow: 0 10px 40px rgba(0,0,0,0.7);
-      text-align: center;
-      max-width: 400px;
+      max-width: 500px;
       width: 100%;
     }
-
     h1 {
+      text-align: center;
       margin-bottom: 20px;
       color: #ff7f50;
-      text-shadow: 1px 1px 5px rgba(0,0,0,0.5);
     }
-
-    .otp-inputs {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 30px;
-    }
-
-    .otp-inputs input {
-      width: 50px;
-      height: 60px;
-      font-size: 2rem;
-      text-align: center;
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
       border-radius: 10px;
       border: none;
       outline: none;
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-      transition: background 0.3s;
+      font-size: 1rem;
     }
-
-    .otp-inputs input:focus {
-      background: rgba(255,255,255,0.2);
-    }
-
     button {
       width: 100%;
-      padding: 15px 0;
-      font-size: 1.2rem;
-      font-weight: bold;
-      background: linear-gradient(135deg, #ff416c, #ff4b2b);
-      border: none;
+      padding: 15px;
+      font-size: 1.1rem;
       border-radius: 50px;
+      border: none;
+      background: linear-gradient(135deg, #ff416c, #ff4b2b);
       cursor: pointer;
-      box-shadow: 0 5px 20px rgba(255,75,43,0.5);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
       color: #fff;
+      font-weight: bold;
+      margin-top: 10px;
     }
-
     button:hover {
       transform: translateY(-3px);
       box-shadow: 0 10px 30px rgba(255,75,43,0.6);
     }
-
-    .message {
+    pre {
+      background: rgba(0,0,0,0.2);
+      padding: 10px;
+      border-radius: 10px;
+      overflow-x: auto;
       margin-top: 20px;
-      font-size: 1rem;
-      color: #ffd700;
     }
   </style>
 </head>
 <body>
-  <div class="otp-container">
-    <h1>Enter OTP</h1>
-    <div class="otp-inputs">
-      <input type="text" maxlength="1" />
-      <input type="text" maxlength="1" />
-      <input type="text" maxlength="1" />
-      <input type="text" maxlength="1" />
-      <input type="text" maxlength="1" />
-      <input type="text" maxlength="1" />
-    </div>
-    <button id="verifyBtn">Verify OTP</button>
-    <div class="message" id="message">Enter the 6-digit OTP sent to your email.</div>
+  <div class="task-container">
+    <h1>AI Task Input</h1>
+    <form id="taskForm">
+      <label>Email:</label>
+      <input type="email" id="email" required>
+
+      <label>Task ID:</label>
+      <input type="text" id="task" required>
+
+      <label>Round:</label>
+      <input type="number" id="round" value="1" required>
+
+      <label>Nonce:</label>
+      <input type="text" id="nonce" required>
+
+      <label>Brief:</label>
+      <textarea id="brief" required></textarea>
+
+      <button type="submit">Submit Task</button>
+    </form>
+
+    <h3>API Response:</h3>
+    <pre id="apiResponse">No response yet</pre>
   </div>
 
   <script>
-    const inputs = document.querySelectorAll('.otp-inputs input');
-    const message = document.getElementById('message');
+    const form = document.getElementById('taskForm');
+    const apiResp = document.getElementById('apiResponse');
 
-    // Auto-focus and backspace
-    inputs.forEach((input, i) => {
-      input.addEventListener('input', () => {
-        if (input.value.length > 0 && i < inputs.length - 1) {
-          inputs[i + 1].focus();
-        }
-      });
-
-      input.addEventListener('keydown', (e) => {
-        if (e.key === "Backspace" && input.value === "" && i > 0) {
-          inputs[i - 1].focus();
-        }
-      });
-    });
-
-    // Verify OTP via API
-    document.getElementById('verifyBtn').addEventListener('click', async () => {
-      const otp = Array.from(inputs).map(input => input.value).join('');
-      if (otp.length !== 6) {
-        message.textContent = "Please enter all 6 digits!";
-        message.style.color = "#ff4b2b";
-        return;
-      }
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = {
+        email: document.getElementById('email').value,
+        task: document.getElementById('task').value,
+        round: parseInt(document.getElementById('round').value),
+        nonce: document.getElementById('nonce').value,
+        brief: document.getElementById('brief').value
+      };
+      apiResp.textContent = "Sending request...";
 
       try {
-        const response = await fetch("/verification", {
+        const response = await fetch("/liveserver/endpoint", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ otp })
+          body: JSON.stringify(data)
         });
 
+        if(!response.ok) throw new Error(`HTTP ${response.status}`);
         const result = await response.json();
-        message.textContent = result.message;
-        message.style.color = result.success ? "#00ff00" : "#ff4b2b";
-
-        if(result.success) {
-          // Redirect to task input page after 1 second
-          setTimeout(() => {
-            window.location.href = "/task_input";
-          }, 1000);
-        }
-
-      } catch (err) {
-        message.textContent = "Error connecting to server!";
-        message.style.color = "#ff4b2b";
+        apiResp.textContent = JSON.stringify(result, null, 2);
+      } catch(err) {
+        apiResp.textContent = `Error: ${err}`;
       }
     });
   </script>
 </body>
 </html>
+"""
 
-    """
 
 
 # OPTIONS preflight handler for /api/index
