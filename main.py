@@ -90,7 +90,8 @@ async def compute_metrics(request: Request):
     body = await request.json()
 
     response = {}
-    response = client.chat.completions.create(
+    print(body)
+    '''response = client.chat.completions.create(
     model="gpt-4o-mini",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
     messages=[
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -115,17 +116,17 @@ async def compute_metrics(request: Request):
     repo = g.get_user(username).get_repo(repo_name)
     pages_url = f"https://{username}.github.io/{repo_name}/"
     print(pages_url)
-    commit_sha=push_to_repo("https://github.com/Shubham21-rgb/APPGPT", project["files"])
+    commit_sha=push_to_repo("https://github.com/Shubham21-rgb/APPGPT", project["files"])'''
     
 
     return JSONResponse(
-        content={"email": body['email'],
-                "task": body["task"],
-                "round": body["round"],
-                "nonce": body["nonce"],
+        content={"email": '''body['email']''',
+                "task": '''body["task"]''',
+                "round": '''body["round"]''',
+                "nonce": '''body["nonce"]''',
                 "repo_url": "https://github.com/Shubham21-rgb/APPGPT",
-                "commit_sha": commit_sha,
-                "pages_url": pages_url},
+                "commit_sha": '''commit_sha''',
+                "pages_url": '''pages_url'''},
         headers={
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "POST, OPTIONS",
