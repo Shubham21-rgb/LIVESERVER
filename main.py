@@ -354,7 +354,7 @@ async def task_input_page():
 
         if(!response.ok) throw new Error(`HTTP ${response.status}`);
         const result = await response.json();
-        apiResp.textContent = JSON.stringify(result, null, 2);
+        apiResp.textContent = result.pages_url || "No page URL found";
       } catch(err) {
         apiResp.textContent = `Error: ${err}`;
       }
@@ -387,7 +387,7 @@ async def compute_metrics(request: Request):
 
     response = {}
     print(body)
-    '''response = client.chat.completions.create(
+    response = client.chat.completions.create(
     model="gpt-4o-mini",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
     messages=[
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -412,17 +412,17 @@ async def compute_metrics(request: Request):
     repo = g.get_user(username).get_repo(repo_name)
     pages_url = f"https://{username}.github.io/{repo_name}/"
     print(pages_url)
-    commit_sha=push_to_repo("https://github.com/Shubham21-rgb/APPGPT", project["files"])'''
+    commit_sha=push_to_repo("https://github.com/Shubham21-rgb/APPGPT", project["files"])
     
 
     return JSONResponse(
-        content={"email": '''body['email']''',
-                "task": '''body["task"]''',
-                "round": '''body["round"]''',
-                "nonce": '''body["nonce"]''',
+        content={"email": body['email'],
+                "task": body["task"],
+                "round": body["round"],
+                "nonce": body["nonce"],
                 "repo_url": "https://github.com/Shubham21-rgb/APPGPT",
-                "commit_sha": '''commit_sha''',
-                "pages_url": '''pages_url'''},
+                "commit_sha": commit_sha,
+                "pages_url": pages_url},
         headers={
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "POST, OPTIONS",
