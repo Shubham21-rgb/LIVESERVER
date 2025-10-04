@@ -75,7 +75,7 @@ async def root():
 @app.get("/verify",response_class=HTMLResponse)
 async def verify_page():
     return """
-    <html lang="en">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Enter OTP</title>
@@ -168,7 +168,7 @@ async def verify_page():
       <input type="text" maxlength="1" />
     </div>
     <button id="verifyBtn">Verify OTP</button>
-    <div class="message" id="message">Enter the 6-digit OTP .</div>
+    <div class="message" id="message">Enter the 6-digit OTP sent to your email.</div>
   </div>
 
   <script>
@@ -209,6 +209,14 @@ async def verify_page():
         const result = await response.json();
         message.textContent = result.message;
         message.style.color = result.success ? "#00ff00" : "#ff4b2b";
+
+        if(result.success) {
+          // Redirect to task input page after 1 second
+          setTimeout(() => {
+            window.location.href = "/task_input";
+          }, 1000);
+        }
+
       } catch (err) {
         message.textContent = "Error connecting to server!";
         message.style.color = "#ff4b2b";
