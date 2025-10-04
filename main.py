@@ -71,6 +71,72 @@ async def root():
         html_content = f.read()
     return HTMLResponse(content=html_content, status_code=200)
 
+
+
+@app.get("/task_input", response_class=HTMLResponse)
+async def task_input_page():
+    return """
+    <html>
+      <head><title>Task Input</title></head>
+      <body style="font-family:sans-serif; background:#111; color:white; padding:20px;">
+        <h1>AI Task Input</h1>
+        <form id="taskForm">
+          <label>Email:</label><br>
+          <input type="email" id="email" required><br><br>
+
+          <label>Task ID:</label><br>
+          <input type="text" id="task" required><br><br>
+
+          <label>Round:</label><br>
+          <input type="number" id="round" value="1" required><br><br>
+
+          <label>Nonce:</label><br>
+          <input type="text" id="nonce" required><br><br>
+
+          <label>Brief:</label><br>
+          <textarea id="brief" required></textarea><br><br>
+
+          <button type="submit">Submit Task</button>
+        </form>
+
+        <h3>API Response:</h3>
+        <pre id="apiResponse">No response yet</pre>
+
+        <script>
+          const form = document.getElementById('taskForm');
+          const apiResp = document.getElementById('apiResponse');
+
+          form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+              email: document.getElementById('email').value,
+              task: document.getElementById('task').value,
+              round: parseInt(document.getElementById('round').value),
+              nonce: document.getElementById('nonce').value,
+              brief: document.getElementById('brief').value
+            };
+            apiResp.textContent = "Sending request...";
+
+            try {
+              const response = await fetch("/liveserver/endpoint", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+              });
+
+              if(!response.ok) throw new Error(`HTTP ${response.status}`);
+              const result = await response.json();
+              apiResp.textContent = JSON.stringify(result, null, 2);
+            } catch(err) {
+              apiResp.textContent = `Error: ${err}`;
+            }
+          });
+        </script>
+      </body>
+    </html>
+    """
+
+
 # OPTIONS preflight handler for /api/index
 @app.options("/api/index")
 async def preflight(request: Request):
@@ -83,6 +149,7 @@ async def preflight(request: Request):
         },
         content=""
     )
+
 
 # POST endpoint for /api/index
 @app.post("/liveserver/endpoint")
