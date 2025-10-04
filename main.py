@@ -387,7 +387,7 @@ async def compute_metrics(request: Request):
 
     response = {}
     print(body)
-    response = client.chat.completions.create(
+    '''response = client.chat.completions.create(
     model="gpt-4o-mini",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
     messages=[
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -412,7 +412,7 @@ async def compute_metrics(request: Request):
     repo = g.get_user(username).get_repo(repo_name)
     pages_url = f"https://{username}.github.io/{repo_name}/"
     print(pages_url)
-    commit_sha=push_to_repo("https://github.com/Shubham21-rgb/APPGPT", project["files"])
+    commit_sha=push_to_repo("https://github.com/Shubham21-rgb/APPGPT", project["files"])'''
     
 
     return JSONResponse(
