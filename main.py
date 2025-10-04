@@ -311,7 +311,7 @@ async def task_input_page():
       <label>Email:</label>
       <input type="email" id="email" required>
 
-      <label>Task ID:</label>
+      <label>Task :</label>
       <input type="text" id="task" required>
 
       <label>Round:</label>
