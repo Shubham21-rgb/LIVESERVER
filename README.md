@@ -14,3 +14,4 @@ short_description: This Hugging Face Space deploys the WebGPT application for st
 # Observability API Deployment
 
 
+short_description: Deploys the WebGPT app for static web development
