@@ -76,64 +76,158 @@ async def root():
 @app.get("/task_input", response_class=HTMLResponse)
 async def task_input_page():
     return """
-    <html>
-      <head><title>Task Input</title></head>
-      <body style="font-family:sans-serif; background:#111; color:white; padding:20px;">
-        <h1>AI Task Input</h1>
-        <form id="taskForm">
-          <label>Email:</label><br>
-          <input type="email" id="email" required><br><br>
+<html>
+<head>
+  <title>AI Task Input</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #ffffff;
+      padding: 0;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
 
-          <label>Task ID:</label><br>
-          <input type="text" id="task" required><br><br>
+    .container {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 40px 50px;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+      width: 100%;
+      max-width: 600px;
+    }
 
-          <label>Round:</label><br>
-          <input type="number" id="round" value="1" required><br><br>
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 30px;
+      color: #ff7f50;
+      text-shadow: 1px 1px 5px rgba(0,0,0,0.5);
+    }
 
-          <label>Nonce:</label><br>
-          <input type="text" id="nonce" required><br><br>
+    form label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #ffd700;
+    }
 
-          <label>Brief:</label><br>
-          <textarea id="brief" required></textarea><br><br>
+    form input, form textarea {
+      width: 100%;
+      padding: 12px 15px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 1rem;
+      transition: background 0.3s ease;
+    }
 
-          <button type="submit">Submit Task</button>
-        </form>
+    form input:focus, form textarea:focus {
+      background: rgba(255,255,255,0.2);
+    }
 
-        <h3>API Response:</h3>
-        <pre id="apiResponse">No response yet</pre>
+    button {
+      display: block;
+      width: 100%;
+      padding: 15px 0;
+      font-size: 1rem;
+      font-weight: bold;
+      background: linear-gradient(135deg, #ff416c, #ff4b2b);
+      border: none;
+      border-radius: 50px;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 5px 20px rgba(255,75,43,0.5);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
 
-        <script>
-          const form = document.getElementById('taskForm');
-          const apiResp = document.getElementById('apiResponse');
+    button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(255,75,43,0.6);
+    }
 
-          form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = {
-              email: document.getElementById('email').value,
-              task: document.getElementById('task').value,
-              round: parseInt(document.getElementById('round').value),
-              nonce: document.getElementById('nonce').value,
-              brief: document.getElementById('brief').value
-            };
-            apiResp.textContent = "Sending request...";
+    #apiResponse {
+      background: rgba(0,0,0,0.4);
+      padding: 15px;
+      border-radius: 15px;
+      font-family: monospace;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
 
-            try {
-              const response = await fetch("/liveserver/endpoint", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
-              });
+    h3 {
+      margin-bottom: 10px;
+      color: #ffb347;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>AI Task Input</h1>
+    <form id="taskForm">
+      <label>Email:</label>
+      <input type="email" id="email" required>
 
-              if(!response.ok) throw new Error(`HTTP ${response.status}`);
-              const result = await response.json();
-              apiResp.textContent = JSON.stringify(result, null, 2);
-            } catch(err) {
-              apiResp.textContent = `Error: ${err}`;
-            }
-          });
-        </script>
-      </body>
-    </html>
+      <label>Task ID:</label>
+      <input type="text" id="task" required>
+
+      <label>Round:</label>
+      <input type="number" id="round" value="1" required>
+
+      <label>Nonce:</label>
+      <input type="text" id="nonce" required>
+
+      <label>Brief:</label>
+      <textarea id="brief" rows="4" required></textarea>
+
+      <button type="submit">Submit Task</button>
+    </form>
+
+    <h3>API Response:</h3>
+    <pre id="apiResponse">No response yet</pre>
+  </div>
+
+  <script>
+    const form = document.getElementById('taskForm');
+    const apiResp = document.getElementById('apiResponse');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = {
+        email: document.getElementById('email').value,
+        task: document.getElementById('task').value,
+        round: parseInt(document.getElementById('round').value),
+        nonce: document.getElementById('nonce').value,
+        brief: document.getElementById('brief').value
+      };
+      apiResp.textContent = "Sending request...";
+
+      try {
+        const response = await fetch("/liveserver/endpoint", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+
+        if(!response.ok) throw new Error(`HTTP ${response.status}`);
+        const result = await response.json();
+        apiResp.textContent = JSON.stringify(result, null, 2);
+      } catch(err) {
+        apiResp.textContent = `Error: ${err}`;
+      }
+    });
+  </script>
+</body>
+</html>
+
     """
 
 
