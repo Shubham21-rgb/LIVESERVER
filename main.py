@@ -417,7 +417,19 @@ async def compute_metrics(request: Request):
       pages_url = f"https://{username}.github.io/{repo_name}/"
       print(pages_url)
       commit_sha=push_to_repo("https://github.com/Shubham21-rgb/APPGPT", project["files"])
-    
+      '''content={"email": body['email'],
+                "task": body["task"],
+                "round": body["round"],
+                "nonce": body["nonce"],
+                "repo_url": "https://github.com/Shubham21-rgb/APPGPT",
+                "commit_sha": commit_sha,
+                "pages_url": pages_url},'''
+      '''requests.post(remote_url, json=content, headers={
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+        "Content-Type": "application/json"
+      }) '''
 
       return JSONResponse(
           content={"email": body['email'],
@@ -434,6 +446,9 @@ async def compute_metrics(request: Request):
           }
       )
     else:
+      '''requests.post(remote_url, json=data, headers={
+        "Content-Type": "application/json"
+      })'''
       return JSONResponse(
           content={"pages_url": "Unauthoeized To get the features"},
           status_code=403,
