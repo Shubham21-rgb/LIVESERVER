@@ -324,6 +324,9 @@ async def task_input_page():
       <label>Brief:</label>
       <textarea id="brief" required></textarea>
 
+      <label>Signature:</label>
+      <textarea id="signature" required></textarea>
+
       <button type="submit">Submit Task</button>
     </form>
 
@@ -342,7 +345,8 @@ async def task_input_page():
         task: document.getElementById('task').value,
         round: parseInt(document.getElementById('round').value),
         nonce: document.getElementById('nonce').value,
-        brief: document.getElementById('brief').value
+        brief: document.getElementById('brief').value,
+        signature: document.getElementById('signature').value
       };
       apiResp.textContent = "Sending request...";
 
