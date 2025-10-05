@@ -227,7 +227,8 @@ async def verify_page():
 </html>
     """
 
-FIXED_OTP = "003200" 
+FIXED_OTP = os.getenv("OTP_TOKEN")
+
 @app.post("/verification")
 async def verification(request: Request):
     data = await request.json()
@@ -386,8 +387,7 @@ async def compute_metrics(request: Request):
     body = await request.json()
 
     response = {}
-    print(body)
-    '''response = client.chat.completions.create(
+    response = client.chat.completions.create(
     model="gpt-4o-mini",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
     messages=[
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -395,8 +395,6 @@ async def compute_metrics(request: Request):
     ],
     temperature=0.4
     )
-
-    print(response.choices[0].message.content)
     raw_output = response.choices[0].message.content
     try:
         project = json.loads(raw_output)
@@ -412,7 +410,7 @@ async def compute_metrics(request: Request):
     repo = g.get_user(username).get_repo(repo_name)
     pages_url = f"https://{username}.github.io/{repo_name}/"
     print(pages_url)
-    commit_sha=push_to_repo("https://github.com/Shubham21-rgb/APPGPT", project["files"])'''
+    commit_sha=push_to_repo("https://github.com/Shubham21-rgb/APPGPT", project["files"])
     
 
     return JSONResponse(
