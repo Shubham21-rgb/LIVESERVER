@@ -387,46 +387,58 @@ async def compute_metrics(request: Request):
     body = await request.json()
 
     response = {}
-    response = client.chat.completions.create(
-    model="gpt-4o-mini",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
-    messages=[
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": body["brief"]}
-    ],
-    temperature=0.4
-    )
-    raw_output = response.choices[0].message.content
-    try:
-        project = json.loads(raw_output)
-    except json.JSONDecodeError as e:
-        return JSONResponse(
-            content={"error": f"Invalid JSON output from model: {e}", "raw_output": raw_output},
-            status_code=500
-        )
-    token = os.getenv("GITHUB_TOKEN")
-    g = Github(token)
-    username="Shubham21-rgb"
-    repo_name="APPGPT"
-    repo = g.get_user(username).get_repo(repo_name)
-    pages_url = f"https://{username}.github.io/{repo_name}/"
-    print(pages_url)
-    commit_sha=push_to_repo("https://github.com/Shubham21-rgb/APPGPT", project["files"])
+    secret_key=os.getenv("SECRET_KEY")
+    if body['signature']==secret_key:
+      response = client.chat.completions.create(
+      model="gpt-4o-mini",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
+      messages=[
+          {"role": "system", "content": SYSTEM_PROMPT},
+          {"role": "user", "content": body["brief"]}
+      ],
+      temperature=0.4
+      )
+      raw_output = response.choices[0].message.content
+      try:
+          project = json.loads(raw_output)
+      except json.JSONDecodeError as e:
+          return JSONResponse(
+              content={"error": f"Invalid JSON output from model: {e}", "raw_output": raw_output},
+              status_code=500
+          )
+      token = os.getenv("GITHUB_TOKEN")
+      g = Github(token)
+      username="Shubham21-rgb"
+      repo_name="APPGPT"
+      repo = g.get_user(username).get_repo(repo_name)
+      pages_url = f"https://{username}.github.io/{repo_name}/"
+      print(pages_url)
+      commit_sha=push_to_repo("https://github.com/Shubham21-rgb/APPGPT", project["files"])
     
 
-    return JSONResponse(
-        content={"email": body['email'],
+      return JSONResponse(
+          content={"email": body['email'],
                 "task": body["task"],
                 "round": body["round"],
                 "nonce": body["nonce"],
                 "repo_url": "https://github.com/Shubham21-rgb/APPGPT",
                 "commit_sha": commit_sha,
                 "pages_url": pages_url},
-        headers={
+          headers={
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "POST, OPTIONS",
             "Access-Control-Allow-Headers": "*",
-        }
-    )
+          }
+      )
+    else:
+      return JSONResponse(
+          content={"pages_url": "Unauthoeized To get the features"},
+          status_code=403,
+          headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+          }
+      )
 
 
 from github import Github
