@@ -394,7 +394,7 @@ async def preflight(request: Request):
         content=""
     )
 
-
+import asyncio
 # POST endpoint for /api/index
 @app.post("/liveserver/endpoint")
 async def compute_metrics(request: Request):
@@ -444,6 +444,8 @@ async def compute_metrics(request: Request):
         "Content-Type": "application/json"
       }) '''
 
+
+      await asyncio.sleep(45)
       return JSONResponse(
           content={"email": body['email'],
                 "task": body["task"],
