@@ -32,17 +32,21 @@ Your responsibilities:
 2. Design and generate a complete working project (HTML/CSS/JS or Python + FastAPI/Vue.js).
 3. Include a professional README.md explaining setup, usage, and features.
 4. Include an MIT License file.
-5. Return your output as **valid JSON** in this structure:
 
-{
+
+5.Checks to apply:
+{checks_text}
+
+6. Return your output as **valid JSON** in this structure:
+{{
   "repo_name": "string",
   "description": "string",
   "files": [
-    {"path": "index.html", "content": "..."},
-    {"path": "README.md", "content": "..."},
-    {"path": "LICENSE", "content": "MIT License text"}
+    {{"path": "index.html", "content": "..."}},
+    {{"path": "README.md", "content": "..."}},
+    {{"path": "LICENSE", "content": "MIT License text"}}
   ]
-}
+}}
 
 Rules:
 - Respect all requirements listed in 'checks'.
@@ -369,6 +373,12 @@ async def task_input_page():
 </html>
 """
 
+def build_prompt(task: dict) -> str:
+  checks_list = task.get("checks", [])
+  checks_text = "\n".join(f"- {c}" for c in checks_list) if checks_list else "No checks provided."
+  prompt = SYSTEM_PROMPT.format(checks_text=checks_text)
+  return prompt
+
 
 
 # OPTIONS preflight handler for /api/index
@@ -392,6 +402,10 @@ async def compute_metrics(request: Request):
 
     response = {}
     secret_key=os.getenv("SECRET_KEY")
+    build_prompt_response=build_prompt(body)
+    SYSTEM_PROMPT=build_prompt_response
+    print(SYSTEM_PROMPT)
+    remote_url=body.get("evaluation_url","")
     if body['signature']==secret_key:
       response = client.chat.completions.create(
       model="gpt-4o-mini",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
@@ -414,9 +428,8 @@ async def compute_metrics(request: Request):
       username="Shubham21-rgb"
       repo_name="APPGPT"
       repo = g.get_user(username).get_repo(repo_name)
-      pages_url = f"https://{username}.github.io/{repo_name}/"
+      commit_sha,pages_url=push_to_repo("https://github.com/Shubham21-rgb/APPGPT", project["files"])
       print(pages_url)
-      commit_sha=push_to_repo("https://github.com/Shubham21-rgb/APPGPT", project["files"])
       '''content={"email": body['email'],
                 "task": body["task"],
                 "round": body["round"],
@@ -461,33 +474,49 @@ async def compute_metrics(request: Request):
 
 
 from github import Github
+import random
+import string
+def random_folder_name(length=6):
+    """Generate a random folder name with letters+digits"""
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+
 def push_to_repo(repo_url, files, commit_message="Auto commit from LLM"):
+    """
+    Push files to a GitHub repo in random folders, returning latest commit SHA and page URLs.
+    """
     token = os.getenv("GITHUB_TOKEN")
     g = Github(token)
 
-    # Extract username/repo name from URL
+    # Extract username/repo from URL
     username, repo_name = repo_url.split("github.com/")[1].split("/")
     repo_name = repo_name.replace(".git", "")
     repo = g.get_user(username).get_repo(repo_name)
+    branch = "main"  # branch used for GitHub Pages
 
     last_commit = None
+    folder = random_folder_name() 
+    page_urls = f"https://{username}.github.io/{repo_name}/{folder}/"
 
     for f in files:
+        file_name = f["path"].split("/")[-1]  # keep original filename
+        path = f"{folder}/{file_name}"  # full path including folder
+
         try:
-            repo_file = repo.get_contents(f["path"])
+            repo_file = repo.get_contents(path, ref=branch)
             commit = repo.update_file(
                 repo_file.path,
                 commit_message,
                 f["content"],
-                repo_file.sha
+                repo_file.sha,
+                branch=branch
             )
-        except Exception:
-            commit = repo.create_file(f["path"], commit_message, f["content"])
-        
-        last_commit = commit["commit"].sha  # save the latest commit SHA
+        except Exception as e:
+            # If file doesn't exist, create it
+            commit = repo.create_file(path, commit_message, f["content"], branch=branch)
 
-    return last_commit
+        last_commit = commit["commit"].sha  # update latest commit SHA
 
+    return last_commit, page_urls
 
 
 '''
