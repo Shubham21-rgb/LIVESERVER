@@ -502,7 +502,7 @@ async def compute_metrics(request: Request):
       # Compact the project context (optional: only include key files)
       summary = "\n".join([f"- {f['path']}" for f in project['files']])
       context_code = "\n\n".join([
-          f"File: {f['path']}\n{f['content'][:600]}"  # first 600 chars per file for context
+          f"File: {f['path']}\n{f['content']}"  # first 600 chars per file for context
           for f in project['files']
           if f['path'].endswith((".html", ".js", ".py", ".vue", ".md"))
       ])
