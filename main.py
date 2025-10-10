@@ -54,6 +54,32 @@ Rules:
 - Output only the JSON, nothing else.
 """
 
+SYSTEM_PROMPT_ROUND2 = """
+You are CodeForge, an autonomous software engineer continuing an existing project you created earlier.
+
+You receive a new task brief describing improvements or changes to the existing codebase.
+
+Instructions:
+1. Read and interpret the new brief carefully.
+2. Modify or extend the previous project accordingly.
+3. Maintain the same folder structure and general code style.
+4. Only output the updated or new files.
+5. Return your response as valid JSON:
+
+{
+  "repo_name": "string",
+  "description": "Updated project description",
+  "files": [
+    {"path": "index.html", "content": "..."},
+    {"path": "style.css", "content": "..."}
+  ]
+}
+
+Rules:
+- Only include changed or new files.
+- Preserve all other files from the previous round as-is.
+- Output only JSON.
+"""
 
 
 
@@ -406,7 +432,8 @@ async def compute_metrics(request: Request):
     SYSTEM_PROMPT=build_prompt_response
     print(SYSTEM_PROMPT)
     remote_url=body.get("evaluation_url","")
-    if body['signature']==secret_key:
+    ROUND1_STATE = {}  
+    if body['signature']==secret_key and body['round']==1:
       response = client.chat.completions.create(
       model="gpt-4o-mini",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
       messages=[
@@ -428,7 +455,93 @@ async def compute_metrics(request: Request):
       username="Shubham21-rgb"
       repo_name="APPGPT"
       repo = g.get_user(username).get_repo(repo_name)
-      commit_sha,pages_url=push_to_repo("https://github.com/Shubham21-rgb/APPGPT", project["files"])
+      commit_sha,pages_url,folder=push_to_repo("https://github.com/Shubham21-rgb/APPGPT", project["files"])
+      ROUND1_STATE[body["nonce"]] = {"folder": folder, "project": project}
+      print(pages_url)
+      '''content={"email": body['email'],
+                "task": body["task"],
+                "round": body["round"],
+                "nonce": body["nonce"],
+                "repo_url": "https://github.com/Shubham21-rgb/APPGPT",
+                "commit_sha": commit_sha,
+                "pages_url": pages_url},'''
+      '''requests.post(remote_url, json=content, headers={
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+        "Content-Type": "application/json"
+      }) '''
+
+      print("Round 1 val",ROUND1_STATE)
+      with open("/tmp/ROUND1_STATE.json", "w") as f:
+        json.dump(ROUND1_STATE, f, indent=4)
+      await asyncio.sleep(45)
+      return JSONResponse(
+          content={"email": body['email'],
+                "task": body["task"],
+                "round": body["round"],
+                "nonce": body["nonce"],
+                "repo_url": "https://github.com/Shubham21-rgb/APPGPT",
+                "commit_sha": commit_sha,
+                "pages_url": pages_url,
+                "folder": folder},
+          headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+          }
+      )
+    elif body['round']==2 and body['signature']==secret_key:
+      with open("/tmp/ROUND1_STATE.json") as f:
+        ROUND1_STATE = json.load(f)
+      state = ROUND1_STATE.get(body["nonce"])
+      if not state:
+        return JSONResponse(content={"error": "No previous project found"}, status_code=400)
+      
+      folder = state["folder"]
+      project = state["project"]
+
+      # Compact the project context (optional: only include key files)
+      summary = "\n".join([f"- {f['path']}" for f in project['files']])
+      context_code = "\n\n".join([
+          f"File: {f['path']}\n{f['content'][:600]}"  # first 600 chars per file for context
+          for f in project['files']
+          if f['path'].endswith((".html", ".js", ".py", ".vue", ".md"))
+      ])
+
+      SYSTEM_PROMPT = SYSTEM_PROMPT_ROUND2
+      user_prompt = f"""
+  This is a continuation of the previous project with these files:
+  {summary}
+
+  Here are partial contents for reference:
+  {context_code}
+
+  Apply the following update task:
+  {body['brief']}
+  """
+      response = client.chat.completions.create(
+      model="gpt-4o-mini",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
+      messages=[
+          {"role": "system", "content": SYSTEM_PROMPT},
+          {"role": "user", "content":user_prompt}
+      ],
+      temperature=0.4
+      )
+      raw_output = response.choices[0].message.content
+      try:
+          project = json.loads(raw_output)
+      except json.JSONDecodeError as e:
+          return JSONResponse(
+              content={"error": f"Invalid JSON output from model: {e}", "raw_output": raw_output},
+              status_code=500
+          )
+      token = os.getenv("GITHUB_TOKEN")
+      g = Github(token)
+      username="Shubham21-rgb"
+      repo_name="APPGPT"
+      repo = g.get_user(username).get_repo(repo_name)
+      commit_sha,pages_url,folder=push_to_repo("https://github.com/Shubham21-rgb/APPGPT", project["files"],folder=folder)
       print(pages_url)
       '''content={"email": body['email'],
                 "task": body["task"],
@@ -445,7 +558,7 @@ async def compute_metrics(request: Request):
       }) '''
 
 
-      await asyncio.sleep(45)
+      await asyncio.sleep(20)
       return JSONResponse(
           content={"email": body['email'],
                 "task": body["task"],
@@ -453,7 +566,8 @@ async def compute_metrics(request: Request):
                 "nonce": body["nonce"],
                 "repo_url": "https://github.com/Shubham21-rgb/APPGPT",
                 "commit_sha": commit_sha,
-                "pages_url": pages_url},
+                "pages_url": pages_url,
+                "folder": folder},
           headers={
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -465,7 +579,7 @@ async def compute_metrics(request: Request):
         "Content-Type": "application/json"
       })'''
       return JSONResponse(
-          content={"pages_url": "Unauthoeized To get the features"},
+          content={"pages_url": "Unauthoeized To get the values"},
           status_code=403,
           headers={
             "Access-Control-Allow-Origin": "*",
@@ -482,7 +596,7 @@ def random_folder_name(length=6):
     """Generate a random folder name with letters+digits"""
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
-def push_to_repo(repo_url, files, commit_message="Auto commit from LLM"):
+def push_to_repo(repo_url, files, commit_message="Auto commit from LLM",folder=None):
     """
     Push files to a GitHub repo in random folders, returning latest commit SHA and page URLs.
     """
@@ -496,7 +610,8 @@ def push_to_repo(repo_url, files, commit_message="Auto commit from LLM"):
     branch = "main"  # branch used for GitHub Pages
 
     last_commit = None
-    folder = random_folder_name() 
+    if folder is None:
+      folder = random_folder_name() 
     page_urls = f"https://{username}.github.io/{repo_name}/{folder}/"
 
     for f in files:
@@ -518,7 +633,7 @@ def push_to_repo(repo_url, files, commit_message="Auto commit from LLM"):
 
         last_commit = commit["commit"].sha  # update latest commit SHA
 
-    return last_commit, page_urls
+    return last_commit, page_urls,folder
 
 
 '''
