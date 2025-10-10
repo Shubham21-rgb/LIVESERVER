@@ -472,7 +472,6 @@ async def compute_metrics(request: Request):
         "Content-Type": "application/json"
       }) '''
 
-      print("Round 1 val",ROUND1_STATE)
       with open("/tmp/ROUND1_STATE.json", "w") as f:
         json.dump(ROUND1_STATE, f, indent=4)
       await asyncio.sleep(45)
@@ -483,8 +482,7 @@ async def compute_metrics(request: Request):
                 "nonce": body["nonce"],
                 "repo_url": "https://github.com/Shubham21-rgb/APPGPT",
                 "commit_sha": commit_sha,
-                "pages_url": pages_url,
-                "folder": folder},
+                "pages_url": pages_url},
           headers={
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -497,7 +495,7 @@ async def compute_metrics(request: Request):
       state = ROUND1_STATE.get(body["nonce"])
       if not state:
         return JSONResponse(content={"error": "No previous project found"}, status_code=400)
-      
+      print("Round 2------------------->",state)
       folder = state["folder"]
       project = state["project"]
 
@@ -566,8 +564,7 @@ async def compute_metrics(request: Request):
                 "nonce": body["nonce"],
                 "repo_url": "https://github.com/Shubham21-rgb/APPGPT",
                 "commit_sha": commit_sha,
-                "pages_url": pages_url,
-                "folder": folder},
+                "pages_url": pages_url},
           headers={
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "POST, OPTIONS",
