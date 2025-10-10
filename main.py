@@ -517,6 +517,8 @@ async def compute_metrics(request: Request):
 
   Apply the following update task:
   {body['brief']}
+  Do no change any previous files unless necessary.
+  update the files as per the new brief
   """
       response = client.chat.completions.create(
       model="gpt-4o-mini",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
