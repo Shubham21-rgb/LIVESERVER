@@ -421,6 +421,7 @@ async def preflight(request: Request):
     )
 
 import asyncio
+import requests
 # POST endpoint for /api/index
 @app.post("/liveserver/endpoint")
 async def compute_metrics(request: Request):
@@ -453,10 +454,40 @@ async def compute_metrics(request: Request):
       token = os.getenv("GITHUB_TOKEN")
       g = Github(token)
       username="Shubham21-rgb"
-      repo_name="APPGPT"
-      repo = g.get_user(username).get_repo(repo_name)
-      commit_sha,pages_url,folder=push_to_repo("https://github.com/Shubham21-rgb/APPGPT", project["files"])
+      repo_name=body["task"].replace(" ","-")
+      user = g.get_user()
+      try:
+        repo = user.get_repo(repo_name)
+        print(f"Repository '{repo_name}' already exists. Using existing repo.")
+      except:
+        repo = user.create_repo(
+        name=repo_name,
+        description="Repository created via LLM with Pages enabled",
+        private=False,
+        auto_init=True
+        )
+        print(f"Repository '{repo_name}' created successfully!")
+      pages_url = f"https://api.github.com/repos/{username}/{repo_name}/pages"
+      headers = {
+      "Authorization": f"token {token}",
+      "Accept": "application/vnd.github+json"
+      }
+      pages_data = {
+      "source": {
+        "branch": "main",  # or "master" if your repo default branch is master
+        "path": "/"        # serve from root
+        }
+      }
+      response = requests.post(pages_url, headers=headers, json=pages_data)
+
+      if response.status_code in [201, 202]:
+        print("GitHub Pages enabled successfully!")
+        print("Your site URL:", response.json().get("html_url"))
+      else:
+        print("Error enabling Pages:", response.json())
+      commit_sha,pages_url,folder=push_to_repo(repo.clone_url, project["files"])
       ROUND1_STATE[body["nonce"]] = {"folder": folder, "project": project}
+      ROUND1_STATE['repo']=repo.clone_url
       print(pages_url)
       '''content={"email": body['email'],
                 "task": body["task"],
@@ -480,7 +511,7 @@ async def compute_metrics(request: Request):
                 "task": body["task"],
                 "round": body["round"],
                 "nonce": body["nonce"],
-                "repo_url": "https://github.com/Shubham21-rgb/APPGPT",
+                "repo_url": repo.clone_url,
                 "commit_sha": commit_sha,
                 "pages_url": pages_url},
           headers={
@@ -540,8 +571,8 @@ async def compute_metrics(request: Request):
       g = Github(token)
       username="Shubham21-rgb"
       repo_name="APPGPT"
-      repo = g.get_user(username).get_repo(repo_name)
-      commit_sha,pages_url,folder=push_to_repo("https://github.com/Shubham21-rgb/APPGPT", project["files"],folder=folder)
+      repo=ROUND1_STATE.get('repo')
+      commit_sha,pages_url,folder=push_to_repo(repo, project["files"],folder=folder)
       print(pages_url)
       '''content={"email": body['email'],
                 "task": body["task"],
