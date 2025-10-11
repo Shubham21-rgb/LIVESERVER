@@ -618,6 +618,7 @@ async def compute_metrics(request: Request):
         """
       else:
         user_message = user_brief  # no attachments
+      print("############3**********",user_message)
 #################################################################################################################################################3
 
 
