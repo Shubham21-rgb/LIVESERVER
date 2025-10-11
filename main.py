@@ -629,7 +629,6 @@ async def compute_metrics(request: Request):
       state = ROUND1_STATE.get(body["nonce"])
       if not state:
         return JSONResponse(content={"error": "No previous project found"}, status_code=400)
-      print("Round 2------------------->",state)
       folder = state["folder"]
       project = state["project"]
 
@@ -642,23 +641,11 @@ async def compute_metrics(request: Request):
       ])
 
       SYSTEM_PROMPT = SYSTEM_PROMPT_ROUND2
-      user_prompt = f"""
-  This is a continuation of the previous project with these files:
-  {summary}
-
-  Here are partial contents for reference:
-  {context_code}
-
-  Apply the following update task:
-  {body['brief']}
-  Do no change any previous files unless necessary.
-  update the files as per the new brief
-  """
       response = client.chat.completions(
       model="openai/gpt-4o",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
       messages=[
           {"role": "system", "content": SYSTEM_PROMPT},
-          {"role": "user", "content":user_prompt}
+          {"role": "user", "content":user_message}
       ],
       temperature=0.4
       )
