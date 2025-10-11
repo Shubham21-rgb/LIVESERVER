@@ -484,7 +484,7 @@ async def compute_metrics(request: Request):
     remote_url=body.get("evaluation_url","")
     ROUND1_STATE = {}  
     if body['secret'] == secret_key:
-      if body['round']==1:
+      if body['round']==1 and body['secret']==secret_key:
 
         user_brief = body.get("brief", "")
 
@@ -590,7 +590,7 @@ async def compute_metrics(request: Request):
           content={"status": "OK"},
           status_code=200
         )
-      elif body['round']==2:
+      elif body['round']==2 and body['secret']==secret_key:
         user_brief = body.get("brief", "")
 
         # Check attachments
@@ -624,7 +624,6 @@ async def compute_metrics(request: Request):
 
             # Prompt tells model to use attachments
           user_message = f"""
-          {user_brief}
 
   Escape all backslashes (use \\ for each \).
   Do not include raw backslashes.
@@ -646,6 +645,8 @@ async def compute_metrics(request: Request):
   - Keep the rest of the code unchanged.
   - If an attachment or part of the project is irrelevant, mention that you considered it.
   - Your response should clearly indicate which files are being updated and what changes are being made.
+  -keeping all above conditons in mind please do the following task:
+    {user_brief}
           """
         else:
           user_message = user_brief  # no attachments
