@@ -463,7 +463,7 @@ async def compute_metrics(request: Request):
         """
       else:
         user_message = user_brief  # no attachments
-
+      print("############3**********",user_message)
 
 
       response = client.chat.completions.create(
@@ -555,6 +555,8 @@ async def compute_metrics(request: Request):
           # Prompt tells model to use attachments
         user_message = f"""
         {user_brief}
+        Escape all backslashes (use \\ for each \).
+        Do not include raw backslashes.
 
           You are given the following attachments. Use them to assist in your response.
           Attachments:
