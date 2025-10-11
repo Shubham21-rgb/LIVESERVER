@@ -697,11 +697,6 @@ async def compute_metrics(request: Request):
           "Content-Type": "application/json"
         }) 
 
-
-        return JSONResponse(
-            content={"Status": "OK"},
-            status_code=200
-        )
       else:
         data={"pages_url": "Check the JSON values you have entered"}
         requests.post(remote_url, json=data, headers={
