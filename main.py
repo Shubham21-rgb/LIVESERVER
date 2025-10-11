@@ -435,11 +435,41 @@ async def compute_metrics(request: Request):
     remote_url=body.get("evaluation_url","")
     ROUND1_STATE = {}  
     if body['signature']==secret_key and body['round']==1:
+
+      user_brief = body.get("brief", "")
+
+      # Check attachments
+      attachments = body.get("attachments", [])
+
+      if attachments:
+        attachments_text = ""
+        for idx, att in enumerate(attachments, 1):
+          attachments_text += f"{idx}. Name: {att['name']}\n"
+          attachments_text += f"   Data (base64): {att['url']}\n\n"
+
+          # Prompt tells model to use attachments
+      user_message = f"""
+        {user_brief}
+
+          You are given the following attachments. Use them to assist in your response.
+          Attachments:
+          {attachments_text}
+
+        Instructions:
+        - Analyze or extract information from the attachments if relevant.
+        - Combine your findings with the main brief.
+        - If an attachment is irrelevant, you can ignore it but mention that you considered it.
+        """
+      else:
+        user_message = user_brief  # no attachments
+
+
+
       response = client.chat.completions.create(
       model="gpt-4o-mini",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
       messages=[
           {"role": "system", "content": SYSTEM_PROMPT},
-          {"role": "user", "content": body["brief"]}
+          {"role": "user", "content": user_message}
       ],
       temperature=0.4
       )
@@ -510,6 +540,37 @@ async def compute_metrics(request: Request):
         status_code=200
       )
     elif body['round']==2 and body['signature']==secret_key:
+      user_brief = body.get("brief", "")
+
+      # Check attachments
+      attachments = body.get("attachments", [])
+
+      if attachments:
+        attachments_text = ""
+        for idx, att in enumerate(attachments, 1):
+          attachments_text += f"{idx}. Name: {att['name']}\n"
+          attachments_text += f"   Data (base64): {att['url']}\n\n"
+
+          # Prompt tells model to use attachments
+      user_message = f"""
+        {user_brief}
+
+          You are given the following attachments. Use them to assist in your response.
+          Attachments:
+          {attachments_text}
+
+        Instructions:
+        - Analyze or extract information from the attachments if relevant.
+        - Combine your findings with the main brief.
+        - If an attachment is irrelevant, you can ignore it but mention that you considered it.
+        """
+      else:
+        user_message = user_brief  # no attachments
+#################################################################################################################################################3
+
+
+
+
       with open("/tmp/ROUND1_STATE.json") as f:
         ROUND1_STATE = json.load(f)
       state = ROUND1_STATE.get(body["nonce"])
