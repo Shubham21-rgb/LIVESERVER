@@ -560,7 +560,6 @@ async def compute_metrics(request: Request):
       token = os.getenv("GITHUB_TOKEN")
       g = Github(token)
       username="Shubham21-rgb"
-      repo_name="APPGPT"
       repo=ROUND1_STATE.get('repo')
       commit_sha,pages_url,folder=push_to_repo(repo, project["files"],folder=folder)
       print(pages_url)
@@ -585,7 +584,7 @@ async def compute_metrics(request: Request):
                 "task": body["task"],
                 "round": body["round"],
                 "nonce": body["nonce"],
-                "repo_url": "https://github.com/Shubham21-rgb/APPGPT",
+                "repo_url": repo,
                 "commit_sha": commit_sha,
                 "pages_url": pages_url},
           headers={
