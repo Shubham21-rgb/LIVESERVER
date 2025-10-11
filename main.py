@@ -493,7 +493,7 @@ async def compute_metrics(request: Request):
                 "task": body["task"],
                 "round": body["round"],
                 "nonce": body["nonce"],
-                "repo_url": "https://github.com/Shubham21-rgb/APPGPT",
+                "repo_url": repo.clone_url,
                 "commit_sha": commit_sha,
                 "pages_url": pages_url},
       requests.post(remote_url, json=content, headers={
