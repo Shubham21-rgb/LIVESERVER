@@ -509,18 +509,6 @@ async def compute_metrics(request: Request):
       return JSONResponse(
         content=None,
         status_code=200
-          '''content={"email": body['email'],
-                "task": body["task"],
-                "round": body["round"],
-                "nonce": body["nonce"],
-                "repo_url": repo.clone_url,
-                "commit_sha": commit_sha,
-                "pages_url": pages_url},
-          headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-          }'''
       )
     elif body['round']==2 and body['signature']==secret_key:
       with open("/tmp/ROUND1_STATE.json") as f:
