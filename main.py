@@ -448,7 +448,7 @@ async def compute_metrics(request: Request):
           attachments_text += f"   Data (base64): {att['url']}\n\n"
 
           # Prompt tells model to use attachments
-      user_message = f"""
+        user_message = f"""
         {user_brief}
 
           You are given the following attachments. Use them to assist in your response.
