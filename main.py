@@ -507,7 +507,7 @@ async def compute_metrics(request: Request):
         json.dump(ROUND1_STATE, f, indent=4)
       await asyncio.sleep(45)
       return JSONResponse(
-        content=None,
+        content={"status": "OK"},
         status_code=200
       )
     elif body['round']==2 and body['signature']==secret_key:
