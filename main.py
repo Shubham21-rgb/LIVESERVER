@@ -505,7 +505,6 @@ async def compute_metrics(request: Request):
 
       with open("/tmp/ROUND1_STATE.json", "w") as f:
         json.dump(ROUND1_STATE, f, indent=4)
-      await asyncio.sleep(45)
       return JSONResponse(
         content={"status": "OK"},
         status_code=200
@@ -563,40 +562,30 @@ async def compute_metrics(request: Request):
       repo=ROUND1_STATE.get('repo')
       commit_sha,pages_url,folder=push_to_repo(repo, project["files"],folder=folder)
       print(pages_url)
-      '''content={"email": body['email'],
-                "task": body["task"],
-                "round": body["round"],
-                "nonce": body["nonce"],
-                "repo_url": "https://github.com/Shubham21-rgb/APPGPT",
-                "commit_sha": commit_sha,
-                "pages_url": pages_url},'''
-      '''requests.post(remote_url, json=content, headers={
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "*",
-        "Content-Type": "application/json"
-      }) '''
-
-
-      await asyncio.sleep(20)
-      return JSONResponse(
-          content={"email": body['email'],
+      content={"email": body['email'],
                 "task": body["task"],
                 "round": body["round"],
                 "nonce": body["nonce"],
                 "repo_url": repo,
                 "commit_sha": commit_sha,
                 "pages_url": pages_url},
-          headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-          }
+      requests.post(remote_url, json=content, headers={
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+        "Content-Type": "application/json"
+      }) 
+
+
+      return JSONResponse(
+          content={"Status": "OK"},
+          status_code=200
       )
     else:
-      '''requests.post(remote_url, json=data, headers={
+      data={"pages_url": "Check the JSON values you have entered"}
+      requests.post(remote_url, json=data, headers={
         "Content-Type": "application/json"
-      })'''
+      })
       return JSONResponse(
           content={"pages_url": "Unauthoeized To get the values"},
           status_code=403,
