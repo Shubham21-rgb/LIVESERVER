@@ -6,9 +6,31 @@ import json
 import os
 from dotenv import load_dotenv
 from fastapi.responses import HTMLResponse
-
+import requests
 app = FastAPI()
+load_dotenv()  # Load environment variables from .env file
 
+api_key=os.getenv("AI_PIPE_TOKEN")
+'''
+headers = {
+    "Authorization": f"Bearer {api_key}",
+    "Content-Type": "application/json"
+}
+
+data = {
+    "model": "openai/gpt-4o",
+    "messages": [{"role": "user", "content": "What is 2 + 2?"}]
+}
+
+response = requests.post(
+    "https://aipipe.org/openrouter/v1/chat/completions",
+    headers=headers,
+    json={
+        "model": "openai/gpt-4o",
+        "messages": [{"role": "user", "content": "Hello"}]
+    }
+)
+print("AI_PIPE",response.json())'''
 # Enable CORS for all origins, methods, headers
 app.add_middleware(
     CORSMiddleware,
@@ -19,7 +41,7 @@ app.add_middleware(
 )
 
 
-load_dotenv()  # Load environment variables from .env file
+
 
 #--------------------------------------------------------------------
 SYSTEM_PROMPT = """
@@ -52,6 +74,7 @@ Rules:
 - Respect all requirements listed in 'checks'.
 - Do not include any secrets or credentials.
 - Output only the JSON, nothing else.
+- Return only valid JSON. Do NOT wrap it in ```json or ``` code fences.
 """
 
 SYSTEM_PROMPT_ROUND2 = """
@@ -64,7 +87,7 @@ Instructions:
 2. Modify or extend the previous project accordingly.
 3. Maintain the same folder structure and general code style.
 4. Only output the updated or new files.
-5. Return your response as valid JSON:
+5. Return only valid JSON. Do NOT wrap it in ```json or ``` code fences.
 
 {
   "repo_name": "string",
@@ -80,7 +103,33 @@ Rules:
 - Preserve all other files from the previous round as-is.
 - Output only JSON.
 """
+class AIPipeClient:
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self.base_url = "https://aipipe.org/openrouter/v1"
 
+    class Chat:
+        def __init__(self, parent):
+            self.parent = parent
+
+        def completions(self, model, messages, temperature=0.7):
+            url = f"{self.parent.base_url}/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {self.parent.api_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": model,
+                "messages": messages,
+                "temperature": temperature
+            }
+            resp = requests.post(url, headers=headers, json=payload)
+            resp_json = resp.json()
+            return resp_json
+
+    @property
+    def chat(self):
+        return self.Chat(self)
 
 
 
@@ -89,9 +138,9 @@ Rules:
 
 
 
-from openai import OpenAI
-api_key = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=api_key)
+#from openai import OpenAI
+#api_key = os.getenv("OPENAI_API_KEY")
+client = AIPipeClient(api_key)
 
 
 
@@ -466,15 +515,15 @@ async def compute_metrics(request: Request):
       print("############3**********",user_message)
 
 
-      response = client.chat.completions.create(
-      model="gpt-4o-mini",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
+      response = client.chat.completions(
+      model="openai/gpt-4o",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
       messages=[
           {"role": "system", "content": SYSTEM_PROMPT},
           {"role": "user", "content": user_message}
       ],
       temperature=0.4
       )
-      raw_output = response.choices[0].message.content
+      raw_output = response['choices'][0]['message']['content']
       try:
           project = json.loads(raw_output)
       except json.JSONDecodeError as e:
@@ -604,15 +653,15 @@ async def compute_metrics(request: Request):
   Do no change any previous files unless necessary.
   update the files as per the new brief
   """
-      response = client.chat.completions.create(
-      model="gpt-4o-mini",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
+      response = client.chat.completions(
+      model="openai/gpt-4o",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
       messages=[
           {"role": "system", "content": SYSTEM_PROMPT},
           {"role": "user", "content":user_prompt}
       ],
       temperature=0.4
       )
-      raw_output = response.choices[0].message.content
+      raw_output = response['choices'][0]['message']['content']
       try:
           project = json.loads(raw_output)
       except json.JSONDecodeError as e:
