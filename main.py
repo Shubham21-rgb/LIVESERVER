@@ -489,25 +489,27 @@ async def compute_metrics(request: Request):
       ROUND1_STATE[body["nonce"]] = {"folder": folder, "project": project}
       ROUND1_STATE['repo']=repo.clone_url
       print(pages_url)
-      '''content={"email": body['email'],
+      content={"email": body['email'],
                 "task": body["task"],
                 "round": body["round"],
                 "nonce": body["nonce"],
                 "repo_url": "https://github.com/Shubham21-rgb/APPGPT",
                 "commit_sha": commit_sha,
-                "pages_url": pages_url},'''
-      '''requests.post(remote_url, json=content, headers={
+                "pages_url": pages_url},
+      requests.post(remote_url, json=content, headers={
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
         "Access-Control-Allow-Headers": "*",
         "Content-Type": "application/json"
-      }) '''
+      }) 
 
       with open("/tmp/ROUND1_STATE.json", "w") as f:
         json.dump(ROUND1_STATE, f, indent=4)
       await asyncio.sleep(45)
       return JSONResponse(
-          content={"email": body['email'],
+        content=None,
+        status_code=200
+          '''content={"email": body['email'],
                 "task": body["task"],
                 "round": body["round"],
                 "nonce": body["nonce"],
@@ -518,7 +520,7 @@ async def compute_metrics(request: Request):
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "POST, OPTIONS",
             "Access-Control-Allow-Headers": "*",
-          }
+          }'''
       )
     elif body['round']==2 and body['signature']==secret_key:
       with open("/tmp/ROUND1_STATE.json") as f:
