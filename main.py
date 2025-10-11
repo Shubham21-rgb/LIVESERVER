@@ -483,174 +483,173 @@ async def compute_metrics(request: Request):
     print(SYSTEM_PROMPT)
     remote_url=body.get("evaluation_url","")
     ROUND1_STATE = {}  
-    if body['signature']==secret_key and body['round']==1:
+    if body['secret'] == secret_key:
+      if body['round']==1:
 
-      user_brief = body.get("brief", "")
+        user_brief = body.get("brief", "")
 
-      # Check attachments
-      attachments = body.get("attachments", [])
+        # Check attachments
+        attachments = body.get("attachments", [])
 
-      if attachments:
-        attachments_text = ""
-        for idx, att in enumerate(attachments, 1):
-          attachments_text += f"{idx}. Name: {att['name']}\n"
-          attachments_text += f"   Data (base64): {att['url']}\n\n"
+        if attachments:
+          attachments_text = ""
+          for idx, att in enumerate(attachments, 1):
+            attachments_text += f"{idx}. Name: {att['name']}\n"
+            attachments_text += f"   Data (base64): {att['url']}\n\n"
 
-          # Prompt tells model to use attachments
-        user_message = f"""
-        {user_brief}
-        Escape all backslashes (use \\ for each \).
-        Do not include raw backslashes.
-          You are given the following attachments. Use them to assist in your response.
-          Attachments:
-          {attachments_text}
+            # Prompt tells model to use attachments
+          user_message = f"""
+          {user_brief}
+          Escape all backslashes (use \\ for each \).
+          Do not include raw backslashes.
+            You are given the following attachments. Use them to assist in your response.
+            Attachments:
+            {attachments_text}
 
-        Instructions:
-        - Analyze or extract information from the attachments if relevant.
-        - Combine your findings with the main brief.
-        - If an attachment is irrelevant, you can ignore it but mention that you considered it.
-        """
-      else:
-        user_message = user_brief  # no attachments
-      print("############3**********",user_message)
+          Instructions:
+          - Analyze or extract information from the attachments if relevant.
+          - Combine your findings with the main brief.
+          - If an attachment is irrelevant, you can ignore it but mention that you considered it.
+          """
+        else:
+          user_message = user_brief  # no attachments
+        print("############3**********",user_message)
 
 
-      response = client.chat.completions(
-      model="openai/gpt-4o",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
-      messages=[
-          {"role": "system", "content": SYSTEM_PROMPT},
-          {"role": "user", "content": user_message}
-      ],
-      temperature=0.4
-      )
-      raw_output = response['choices'][0]['message']['content']
-      try:
-          project = json.loads(raw_output)
-      except json.JSONDecodeError as e:
-          return JSONResponse(
-              content={"error": f"Invalid JSON output from model: {e}", "raw_output": raw_output},
-              status_code=500
-          )
-      token = os.getenv("GITHUB_TOKEN")
-      g = Github(token)
-      username="Shubham21-rgb"
-      repo_name=body["task"].replace(" ","-")
-      user = g.get_user()
-      try:
-        repo = user.get_repo(repo_name)
-        print(f"Repository '{repo_name}' already exists. Using existing repo.")
-      except:
-        repo = user.create_repo(
-        name=repo_name,
-        description="Repository created via LLM with Pages enabled",
-        private=False,
-        auto_init=True
+        response = client.chat.completions(
+        model="openai/gpt-4o",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": user_message}
+        ],
+        temperature=0.4
         )
-        print(f"Repository '{repo_name}' created successfully!")
-      pages_url = f"https://api.github.com/repos/{username}/{repo_name}/pages"
-      headers = {
-      "Authorization": f"token {token}",
-      "Accept": "application/vnd.github+json"
-      }
-      pages_data = {
-      "source": {
-        "branch": "main",  # or "master" if your repo default branch is master
-        "path": "/"        # serve from root
+        raw_output = response['choices'][0]['message']['content']
+        try:
+            project = json.loads(raw_output)
+        except json.JSONDecodeError as e:
+            return JSONResponse(
+                content={"error": f"Invalid JSON output from model: {e}", "raw_output": raw_output},
+                status_code=500
+            )
+        token = os.getenv("GITHUB_TOKEN")
+        g = Github(token)
+        username="Shubham21-rgb"
+        repo_name=body["task"].replace(" ","-")
+        user = g.get_user()
+        try:
+          repo = user.get_repo(repo_name)
+          print(f"Repository '{repo_name}' already exists. Using existing repo.")
+        except:
+          repo = user.create_repo(
+          name=repo_name,
+          description="Repository created via LLM with Pages enabled",
+          private=False,
+          auto_init=True
+          )
+          print(f"Repository '{repo_name}' created successfully!")
+        pages_url = f"https://api.github.com/repos/{username}/{repo_name}/pages"
+        headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github+json"
         }
-      }
-      response = requests.post(pages_url, headers=headers, json=pages_data)
+        pages_data = {
+        "source": {
+          "branch": "main",  # or "master" if your repo default branch is master
+          "path": "/"        # serve from root
+          }
+        }
+        response = requests.post(pages_url, headers=headers, json=pages_data)
 
-      if response.status_code in [201, 202]:
-        print("GitHub Pages enabled successfully!")
-        print("Your site URL:", response.json().get("html_url"))
-      else:
-        print("Error enabling Pages:", response.json())
-      commit_sha,pages_url,folder=push_to_repo(repo.clone_url, project["files"])
-      ROUND1_STATE[body["nonce"]] = {"folder": folder, "project": project}
-      ROUND1_STATE['repo']=repo.clone_url
-      print(pages_url)
-      content={"email": body['email'],
+        if response.status_code in [201, 202]:
+          print("GitHub Pages enabled successfully!")
+          print("Your site URL:", response.json().get("html_url"))
+        else:
+          print("Error enabling Pages:", response.json())
+        commit_sha,pages_url,folder=push_to_repo(repo.clone_url, project["files"])
+        ROUND1_STATE[body["task"]] = {"folder": folder, "project": project}
+        ROUND1_STATE['repo']=repo.clone_url
+        print(pages_url)
+        content={"email": body['email'],
                 "task": body["task"],
                 "round": body["round"],
                 "nonce": body["nonce"],
                 "repo_url": repo.clone_url,
                 "commit_sha": commit_sha,
                 "pages_url": pages_url},
-      requests.post(remote_url, json=content, headers={
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "*",
-        "Content-Type": "application/json"
-      }) 
+        requests.post(remote_url, json=content, headers={
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "*",
+          "Content-Type": "application/json"
+        }) 
 
-      with open("/tmp/ROUND1_STATE.json", "w") as f:
-        json.dump(ROUND1_STATE, f, indent=4)
-      return JSONResponse(
-        content={"status": "OK"},
-        status_code=200
-      )
-    elif body['round']==2 and body['signature']==secret_key:
-      user_brief = body.get("brief", "")
+        with open("/tmp/ROUND1_STATE.json", "w") as f:
+          json.dump(ROUND1_STATE, f, indent=4)
+        return JSONResponse(
+          content={"status": "OK"},
+          status_code=200
+        )
+      elif body['round']==2:
+        user_brief = body.get("brief", "")
 
-      # Check attachments
-      attachments = body.get("attachments", [])
+        # Check attachments
+        attachments = body.get("attachments", [])
 
 #################################################################################################################################################3
 
 
 
 
-      with open("/tmp/ROUND1_STATE.json") as f:
-        ROUND1_STATE = json.load(f)
-      state = ROUND1_STATE.get(body["nonce"])
-      if not state:
-        return JSONResponse(content={"error": "No previous project found"}, status_code=400)
-      folder = state["folder"]
-      project = state["project"]
+        with open("/tmp/ROUND1_STATE.json") as f:
+          ROUND1_STATE = json.load(f)
+        state = ROUND1_STATE.get(body["task"])
+        if not state:
+          return JSONResponse(content={"error": "No previous project found"}, status_code=400)
+        folder = state["folder"]
+        project = state["project"]
 
-      # Compact the project context (optional: only include key files)
-      summary = "\n".join([f"- {f['path']}" for f in project['files']])
-      context_code = "\n\n".join([
-          f"File: {f['path']}\n{f['content']}"  # first 600 chars per file for context
-          for f in project['files']
-          if f['path'].endswith((".html", ".js", ".py", ".vue", ".md"))
-      ])
-      if attachments:
-        attachments_text = ""
-        for idx, att in enumerate(attachments, 1):
-          attachments_text += f"{idx}. Name: {att['name']}\n"
-          attachments_text += f"   Data (base64): {att['url']}\n\n"
+        # Compact the project context (optional: only include key files)
+        summary = "\n".join([f"- {f['path']}" for f in project['files']])
+        context_code = "\n\n".join([
+            f"File: {f['path']}\n{f['content']}"  # first 600 chars per file for context
+            for f in project['files']
+            if f['path'].endswith((".html", ".js", ".py", ".vue", ".md"))
+        ])
+        if attachments:
+          attachments_text = ""
+          for idx, att in enumerate(attachments, 1):
+            attachments_text += f"{idx}. Name: {att['name']}\n"
+            attachments_text += f"   Data (base64): {att['url']}\n\n"
 
-          # Prompt tells model to use attachments
-        user_message = f"""
-        {user_brief}
+            # Prompt tells model to use attachments
+          user_message = f"""
+          {user_brief}
 
-Escape all backslashes (use \\ for each \).
-Do not include raw backslashes.
+  Escape all backslashes (use \\ for each \).
+  Do not include raw backslashes.
 
-You are working on Round 2: only update or modify the project as needed. Do not rewrite the entire project. Focus on making changes relevant to the brief.
+  You are working on Round 2: only update or modify the project as needed. Do not rewrite the entire project. Focus on making changes relevant to the brief.
 
-Project Summary:
-{summary}
+  Project Summary:
+  {summary}
 
-Project Context (key parts of files):
-{context_code}
+  Project Context (key parts of files):
+  {context_code}
 
-Attachments:
-{attachments_text if attachments else 'No attachments provided'}
+  Attachments:
+  {attachments_text if attachments else 'No attachments provided'}
 
-Instructions:
-- Use the attachments if relevant to the update.
-- Only modify files necessary for the task described.
-- Keep the rest of the code unchanged.
-- If an attachment or part of the project is irrelevant, mention that you considered it.
-- Your response should clearly indicate which files are being updated and what changes are being made.
-        """
-      else:
-        user_message = user_brief  # no attachments
-      print("############3**********",user_message)
-
-
+  Instructions:
+  - Use the attachments if relevant to the update.
+  - Only modify files necessary for the task described.
+  - Keep the rest of the code unchanged.
+  - If an attachment or part of the project is irrelevant, mention that you considered it.
+  - Your response should clearly indicate which files are being updated and what changes are being made.
+          """
+        else:
+          user_message = user_brief  # no attachments
+        print("############3**********",user_message)
 
 
 
@@ -659,62 +658,77 @@ Instructions:
 
 
 
-      SYSTEM_PROMPT = SYSTEM_PROMPT_ROUND2
-      response = client.chat.completions(
-      model="openai/gpt-4o",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
-      messages=[
-          {"role": "system", "content": SYSTEM_PROMPT},
-          {"role": "user", "content":user_message}
-      ],
-      temperature=0.4
-      )
-      raw_output = response['choices'][0]['message']['content']
-      try:
-          project = json.loads(raw_output)
-      except json.JSONDecodeError as e:
-          return JSONResponse(
-              content={"error": f"Invalid JSON output from model: {e}", "raw_output": raw_output},
-              status_code=500
-          )
-      token = os.getenv("GITHUB_TOKEN")
-      g = Github(token)
-      username="Shubham21-rgb"
-      repo=ROUND1_STATE.get('repo')
-      commit_sha,pages_url,folder=push_to_repo(repo, project["files"],folder=folder)
-      print(pages_url)
-      content={"email": body['email'],
+
+
+        SYSTEM_PROMPT = SYSTEM_PROMPT_ROUND2
+        response = client.chat.completions(
+        model="openai/gpt-4o",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content":user_message}
+        ],
+        temperature=0.4
+        )
+        raw_output = response['choices'][0]['message']['content']
+        try:
+            project = json.loads(raw_output)
+        except json.JSONDecodeError as e:
+            return JSONResponse(
+                content={"error": f"Invalid JSON output from model: {e}", "raw_output": raw_output},
+                status_code=500
+            )
+        token = os.getenv("GITHUB_TOKEN")
+        g = Github(token)
+        username="Shubham21-rgb"
+        repo=ROUND1_STATE.get('repo')
+        commit_sha,pages_url,folder=push_to_repo(repo, project["files"],folder=folder)
+        print(pages_url)
+        content={"email": body['email'],
                 "task": body["task"],
                 "round": body["round"],
                 "nonce": body["nonce"],
                 "repo_url": repo,
                 "commit_sha": commit_sha,
                 "pages_url": pages_url},
-      requests.post(remote_url, json=content, headers={
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "*",
-        "Content-Type": "application/json"
-      }) 
+        requests.post(remote_url, json=content, headers={
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "*",
+          "Content-Type": "application/json"
+        }) 
 
 
+        return JSONResponse(
+            content={"Status": "OK"},
+            status_code=200
+        )
+      else:
+        data={"pages_url": "Check the JSON values you have entered"}
+        requests.post(remote_url, json=data, headers={
+          "Content-Type": "application/json"
+        })
+        return JSONResponse(
+            content={"pages_url": "Unauthoeized To get the values"},
+            status_code=403,
+            headers={
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "POST, OPTIONS",
+              "Access-Control-Allow-Headers": "*",
+            }
+        )
       return JSONResponse(
-          content={"Status": "OK"},
-          status_code=200
+        content={"status": "OK"},
+        status_code=200
       )
     else:
-      data={"pages_url": "Check the JSON values you have entered"}
-      requests.post(remote_url, json=data, headers={
-        "Content-Type": "application/json"
-      })
-      return JSONResponse(
-          content={"pages_url": "Unauthoeized To get the values"},
-          status_code=403,
-          headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-          }
-      )
+        return JSONResponse(
+            content={"error": "WRONG SECRET KEY"},
+            status_code=401,
+            headers={
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "POST, OPTIONS",
+              "Access-Control-Allow-Headers": "*",
+            })
 
 
 from github import Github
