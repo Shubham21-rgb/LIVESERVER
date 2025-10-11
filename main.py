@@ -595,30 +595,6 @@ async def compute_metrics(request: Request):
       # Check attachments
       attachments = body.get("attachments", [])
 
-      if attachments:
-        attachments_text = ""
-        for idx, att in enumerate(attachments, 1):
-          attachments_text += f"{idx}. Name: {att['name']}\n"
-          attachments_text += f"   Data (base64): {att['url']}\n\n"
-
-          # Prompt tells model to use attachments
-        user_message = f"""
-        {user_brief}
-        Escape all backslashes (use \\ for each \).
-        Do not include raw backslashes.
-
-          You are given the following attachments. Use them to assist in your response.
-          Attachments:
-          {attachments_text}
-
-        Instructions:
-        - Analyze or extract information from the attachments if relevant.
-        - Combine your findings with the main brief.
-        - If an attachment is irrelevant, you can ignore it but mention that you considered it.
-        """
-      else:
-        user_message = user_brief  # no attachments
-      print("############3**********",user_message)
 #################################################################################################################################################3
 
 
@@ -639,6 +615,49 @@ async def compute_metrics(request: Request):
           for f in project['files']
           if f['path'].endswith((".html", ".js", ".py", ".vue", ".md"))
       ])
+      if attachments:
+        attachments_text = ""
+        for idx, att in enumerate(attachments, 1):
+          attachments_text += f"{idx}. Name: {att['name']}\n"
+          attachments_text += f"   Data (base64): {att['url']}\n\n"
+
+          # Prompt tells model to use attachments
+        user_message = f"""
+        {user_brief}
+
+Escape all backslashes (use \\ for each \).
+Do not include raw backslashes.
+
+You are working on Round 2: only update or modify the project as needed. Do not rewrite the entire project. Focus on making changes relevant to the brief.
+
+Project Summary:
+{summary}
+
+Project Context (key parts of files):
+{context_code}
+
+Attachments:
+{attachments_text if attachments else 'No attachments provided'}
+
+Instructions:
+- Use the attachments if relevant to the update.
+- Only modify files necessary for the task described.
+- Keep the rest of the code unchanged.
+- If an attachment or part of the project is irrelevant, mention that you considered it.
+- Your response should clearly indicate which files are being updated and what changes are being made.
+        """
+      else:
+        user_message = user_brief  # no attachments
+      print("############3**********",user_message)
+
+
+
+
+
+
+
+
+
 
       SYSTEM_PROMPT = SYSTEM_PROMPT_ROUND2
       response = client.chat.completions(
