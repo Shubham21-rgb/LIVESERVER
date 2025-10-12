@@ -503,7 +503,7 @@ async def compute_metrics(request: Request):
           Escape all backslashes (use \\ for each \).
           Do not include raw backslashes.
             You are given the following attachments. Use them to assist in your response.
-            Attachments:
+            Attachments: (decode base64 if needed else if url is given then fetch the data from url)
             {attachments_text}
 
           Instructions:
@@ -605,7 +605,7 @@ async def compute_metrics(request: Request):
           ROUND1_STATE = json.load(f)
         state = ROUND1_STATE.get(body["task"])
         if not state:
-          return JSONResponse(content={"error": "No previous project found"}, status_code=400)
+          return JSONResponse(content={"error": "WIHOUT ROUND 1 YOU CANNOT GIVE ROUND 2"}, status_code=400)
         folder = state["folder"]
         project = state["project"]
 
@@ -641,10 +641,12 @@ async def compute_metrics(request: Request):
 
   Instructions:
   - Use the attachments if relevant to the update.
+  - attachement is given in base64 decode it and use it if url is given then fetch the data from url
   - Only modify files necessary for the task described.
   - Keep the rest of the code unchanged.
   - If an attachment or part of the project is irrelevant, mention that you considered it.
   - Your response should clearly indicate which files are being updated and what changes are being made.
+  - Also upadate the README.md to reflect any new features or changes.
   -keeping all above conditons in mind please do the following task:
     {user_brief}
           """
