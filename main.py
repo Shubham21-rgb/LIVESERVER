@@ -471,7 +471,7 @@ async def preflight(request: Request):
 
 
 ################################# Background Task to handle the request asynchronously ##############################
-async def round_1_task(body,secret_key,ROUND1_STATE={}):
+'''async def round_1_task(body,secret_key,ROUND1_STATE={}):
   if body['round']==1 and body['secret']==secret_key:
     user_brief = body.get("brief", "")
 
@@ -685,7 +685,7 @@ async def round_2_task(body,secret_key):
           "Access-Control-Allow-Methods": "POST, OPTIONS",
           "Access-Control-Allow-Headers": "*",
           "Content-Type": "application/json"
-        }) 
+        }) '''
 
 
 
@@ -723,17 +723,9 @@ async def compute_metrics(request: Request,background_tasks: BackgroundTasks):
     print(SYSTEM_PROMPT)
     remote_url=body.get("evaluation_url","")
     ROUND1_STATE = {}  
-    if body['secret'] == secret_key and body['round'] ==1:
-      background_tasks.add_task(round_1_task, body,secret_key,)
-      return JSONResponse(
-          content={"status": "OK"},
-          status_code=200)
-    elif body['secret'] == secret_key and body['round'] ==2:
-      background_tasks.add_task(round_2_task, body,secret_key)
-      return JSONResponse(
-          content={"status": "OK"},
-          status_code=200)
-      '''if body['round']==1 and body['secret']==secret_key:
+    if body['secret'] == secret_key:
+  
+      if body['round']==1 and body['secret']==secret_key:
 
         user_brief = body.get("brief", "")
 
@@ -971,7 +963,7 @@ async def compute_metrics(request: Request,background_tasks: BackgroundTasks):
       return JSONResponse(
         content={"status": "OK"},
         status_code=200
-      )'''
+      )
     else:
         return JSONResponse(
             content={"error": "WRONG SECRET KEY"},
