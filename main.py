@@ -577,6 +577,7 @@ async def round_1_task(body,secret_key,ROUND1_STATE={}):
 
 async def round_2_task(body,secret_key):
   if body['round']==2 and body['secret']==secret_key:
+    remote_url=body.get("evaluation_url","")
     user_brief = body.get("brief", "")
 
         # Check attachments
