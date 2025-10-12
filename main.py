@@ -88,15 +88,15 @@ Instructions:
 3. Maintain the same folder structure and general code style.
 4. Only output the updated or new files.
 5. Return only valid JSON. Do NOT wrap it in ```json or ``` code fences.
-
-{
+{{
   "repo_name": "string",
-  "description": "Updated project description",
+  "description": "string",
   "files": [
-    {"path": "index.html", "content": "..."},
-    {"path": "style.css", "content": "..."}
+    {{"path": "index.html", "content": "..."}},
+    {{"path": "README.md", "content": "..."}},
+    {{"path": "LICENSE", "content": "MIT License text"}}
   ]
-}
+}}
 
 Rules:
 - Only include changed or new files.
