@@ -639,6 +639,11 @@ async def compute_metrics(request: Request):
   Attachments:
   {attachments_text if attachments else 'No attachments provided'}
 
+  Please note the following checks to apply:
+  {body.get("checks", [])}
+  Please ensure you adhere to these checks while making modifications.
+  No other files should be changed.
+
   Instructions:
   - Use the attachments if relevant to the update.
   - attachement is given in base64 decode it and use it if url is given then fetch the data from url
