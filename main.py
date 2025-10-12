@@ -570,6 +570,8 @@ async def round_1_task(body,secret_key,ROUND1_STATE={}):
           "Access-Control-Allow-Headers": "*",
           "Content-Type": "application/json"
         })
+    with open("/tmp/ROUND1_STATE.json", "w") as f:
+      json.dump(ROUND1_STATE, f, indent=4)
 
 
 
