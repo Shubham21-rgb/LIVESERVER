@@ -70,8 +70,8 @@ Your responsibilities:
   ]
 }}
 
-Rules:
-- Respect all requirements listed in 'checks'.
+Rules(IMPORTANT):
+- Mandatory needs to do all things in checks if possible (main).
 - Do not include any secrets or credentials.
 - Output only the JSON, nothing else.
 - Return only valid JSON. Do NOT wrap it in ```json or ``` code fences.
@@ -471,7 +471,7 @@ async def preflight(request: Request):
 
 
 ################################# Background Task to handle the request asynchronously ##############################
-'''async def round_1_task(body,secret_key,ROUND1_STATE={}):
+async def round_1_task(body,secret_key,ROUND1_STATE={}):
   if body['round']==1 and body['secret']==secret_key:
     user_brief = body.get("brief", "")
 
@@ -492,15 +492,17 @@ async def preflight(request: Request):
             You are given the following attachments. Use them to assist in your response.
             Attachments: (decode base64 if needed else if url is given then fetch the data from url)
             {attachments_text}
-
+            Checks to apply:
+            {body.get("checks", [])}
           Instructions:
           - Analyze or extract information from the attachments if relevant.
           - Combine your findings with the main brief.
           - If an attachment is irrelevant, you can ignore it but mention that you considered it.
+          - have a look at the checks and do the needful
           """
     else:
       user_message = user_brief  # no attachments
-    print("############3**********",user_message)
+    print("Inside background Task ######",user_message)
 
 
     response = client.chat.completions(
@@ -534,7 +536,7 @@ async def preflight(request: Request):
       private=False,
       auto_init=True
       )
-      print(f"Repository '{repo_name}' created successfully!")
+    print(f"Repository '{repo_name}' created successfully!")
     pages_url = f"https://api.github.com/repos/{username}/{repo_name}/pages"
     headers = {
         "Authorization": f"token {token}",
@@ -639,7 +641,7 @@ async def round_2_task(body,secret_key):
           """
     else:
       user_message = user_brief  # no attachments
-    print("############3**********",user_message)
+    print("Inside background task rnd 2",user_message)
 
 
 
@@ -679,13 +681,13 @@ async def round_2_task(body,secret_key):
                 "nonce": body["nonce"],
                 "repo_url": repo,
                 "commit_sha": commit_sha,
-                "pages_url": pages_url},
+                "pages_url": pages_url}
     requests.post(remote_url, json=content, headers={
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "POST, OPTIONS",
           "Access-Control-Allow-Headers": "*",
           "Content-Type": "application/json"
-        }) '''
+        }) 
 
 
 
@@ -724,8 +726,9 @@ async def compute_metrics(request: Request,background_tasks: BackgroundTasks):
     remote_url=body.get("evaluation_url","")
     ROUND1_STATE = {}  
     if body['secret'] == secret_key:
+      background_tasks.add_task(round_1_task,body,secret_key,ROUND1_STATE={})
   
-      if body['round']==1 and body['secret']==secret_key:
+      '''if body['round']==1 and body['secret']==secret_key:
 
         user_brief = body.get("brief", "")
 
@@ -830,14 +833,24 @@ async def compute_metrics(request: Request,background_tasks: BackgroundTasks):
         return JSONResponse(
           content={"status": "OK"},
           status_code=200
+        )'''
+#################################################################################################################################################
+      if body['round']==2 and body['secret']==secret_key:
+        with open("/tmp/ROUND1_STATE.json") as f:
+          ROUND1_STATE = json.load(f)
+        if not ROUND1_STATE.get(body["task"]):
+          return JSONResponse(content={"error": "WIHOUT ROUND 1 YOU CANNOT GIVE ROUND 2"}, status_code=400)
+        background_tasks.add_task(round_2_task,body,secret_key)
+        return JSONResponse(
+        content={"status": "OK"},
+        status_code=200
         )
-      elif body['round']==2 and body['secret']==secret_key:
-        user_brief = body.get("brief", "")
+
+        '''user_brief = body.get("brief", "")
 
         # Check attachments
         attachments = body.get("attachments", [])
 
-#################################################################################################################################################3
 
 
 
@@ -957,9 +970,9 @@ async def compute_metrics(request: Request,background_tasks: BackgroundTasks):
             headers={
               "Access-Control-Allow-Origin": "*",
               "Access-Control-Allow-Methods": "POST, OPTIONS",
-              "Access-Control-Allow-Headers": "*",
+              "Access-Control-Allow-Headers": "*"
             }
-        )
+        )'''
       return JSONResponse(
         content={"status": "OK"},
         status_code=200
