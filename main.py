@@ -654,14 +654,17 @@ async def round_2_task(body,secret_key):
 
 
     SYSTEM_PROMPT = SYSTEM_PROMPT_ROUND2
-    response = await asyncio.to_thread(lambda:client.chat.completions(
-    model="openai/gpt-4o",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
-    messages=[
+    def run_chat():
+      return client.chat.completions(
+        model="openai/gpt-4o",
+        messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content":user_message}
-    ],
-    temperature=0.4
-    ))
+            {"role": "user", "content": user_message}
+        ],
+        temperature=0.4
+    )
+
+    response = await asyncio.to_thread(run_chat)
     raw_output = response['choices'][0]['message']['content']
     try:
       project = json.loads(raw_output)
