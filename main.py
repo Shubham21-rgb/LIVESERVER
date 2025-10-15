@@ -504,7 +504,7 @@ async def round_1_task(body,secret_key,ROUND1_STATE={}):
       user_message = user_brief  # no attachments
     print("Inside background Task ######",user_message)
     def run_chat():
-    return client.chat.completions(
+      return client.chat.completions(
         model="openai/gpt-4o",
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
