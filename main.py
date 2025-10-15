@@ -505,14 +505,14 @@ async def round_1_task(body,secret_key,ROUND1_STATE={}):
     print("Inside background Task ######",user_message)
 
 
-    response = client.chat.completions(
+    response = await asyncio.to_thread(lambda:client.chat.completions(
     model="openai/gpt-4o",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
     messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_message}
     ],
     temperature=0.4
-    )
+    ))
     raw_output = response['choices'][0]['message']['content']
     try:
       project = json.loads(raw_output)
@@ -653,14 +653,14 @@ async def round_2_task(body,secret_key):
 
 
     SYSTEM_PROMPT = SYSTEM_PROMPT_ROUND2
-    response = client.chat.completions(
+    response = await asyncio.to_thread(lambda:client.chat.completions(
     model="openai/gpt-4o",   # or gpt-4o, gpt-4.1, gpt-3.5-turbo etc.
     messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content":user_message}
     ],
     temperature=0.4
-    )
+    ))
     raw_output = response['choices'][0]['message']['content']
     try:
       project = json.loads(raw_output)
