@@ -521,11 +521,12 @@ async def round_1_task(body,secret_key,ROUND1_STATE={}):
 
     response = await asyncio.to_thread(run_chat)
     raw_output = response['choices'][0]['message']['content']
+    cleaned_output = re.sub(r'^```json\s*|\s*```$', '', raw_output.strip(), flags=re.MULTILINE)
     try:
-      project = json.loads(raw_output)
+      project = json.loads(cleaned_output)
     except json.JSONDecodeError as e:
       return JSONResponse(
-                content={"error": f"Invalid JSON output from model: {e}", "raw_output": raw_output},
+                content={"error": f"Invalid JSON output from model: {e}", "raw_output": cleaned_output},
                 status_code=500
       )
     token = os.getenv("GITHUB_TOKEN")
