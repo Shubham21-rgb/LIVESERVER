@@ -73,8 +73,7 @@ Your responsibilities:
 Rules(IMPORTANT):
 - Mandatory needs to do all things in checks if possible (main).
 - Do not include any secrets or credentials.
-- Output only the JSON, nothing else.
-- Return only valid JSON. Do NOT wrap it in ```json or ``` code fences.
+- Output only valid JSON. No explanations, no code fences, no extra text.
 """
 
 SYSTEM_PROMPT_ROUND2 = """
@@ -101,7 +100,8 @@ Instructions:
 Rules:
 - Only include changed or new files.
 - Preserve all other files from the previous round as-is.
-- Output only JSON.
+- Output only valid JSON. No explanations, no code fences, no extra text.
+
 """
 class AIPipeClient:
     def __init__(self, api_key: str):
@@ -487,18 +487,18 @@ async def round_1_task(body,secret_key,ROUND1_STATE={}):
             # Prompt tells model to use attachments
       user_message = f"""
           {user_brief}
-          Escape all backslashes (use \\ for each \).
-          Do not include raw backslashes.
+          Escape all backslashes as \\ and do not include any single unescaped backslash.
             You are given the following attachments. Use them to assist in your response.
-            Attachments: (decode base64 if needed else if url is given then fetch the data from url)
+            Attachments: (decode base64)
             {attachments_text}
-            Checks to apply:
+            Checks to apply:Only include this section if there are actual checks.
             {body.get("checks", [])}
           Instructions:
           - Analyze or extract information from the attachments if relevant.
           - Combine your findings with the main brief.
           - If an attachment is irrelevant, you can ignore it but mention that you considered it.
           - have a look at the checks and do the needful
+          - Review the checks carefully and apply them to your analysis.
           """
     else:
       user_message = user_brief  # no attachments
@@ -627,10 +627,10 @@ async def round_2_task(body,secret_key):
   Project Context (key parts of files):
   {context_code}
 
-  Attachments:
+  Attachments:(decode base64)
   {attachments_text if attachments else 'No attachments provided'}
 
-  Please note the following checks to apply:
+  Please note the following checks to apply:Only include this section if there are actual checks.
   {body.get("checks", [])}
   Please ensure you adhere to these checks while making modifications.
   No other files should be changed.
