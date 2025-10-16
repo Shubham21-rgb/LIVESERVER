@@ -469,6 +469,7 @@ async def preflight(request: Request):
         content=""
     )
 
+import re
 
 ################################# Background Task to handle the request asynchronously ##############################
 async def round_1_task(body,secret_key,ROUND1_STATE={}):
