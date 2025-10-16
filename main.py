@@ -69,6 +69,7 @@ Your responsibilities:
     {{"path": "LICENSE", "content": "MIT License text"}}
   ]
 }}
+7.Look for attachments if any and use them to assist you in your task.
 
 Rules(IMPORTANT):
 - Mandatory needs to do all things in checks if possible (main).
@@ -96,7 +97,7 @@ Instructions:
     {{"path": "LICENSE", "content": "MIT License text"}}
   ]
 }}
-
+7.Look for attachments if any and use them to assist you in your task.
 Rules:
 - Only include changed or new files.
 - Preserve all other files from the previous round as-is.
@@ -497,7 +498,7 @@ async def round_1_task(body,secret_key,ROUND1_STATE={}):
           Instructions:
           - Analyze or extract information from the attachments if relevant.
           - Combine your findings with the main brief.
-          - If an attachment is irrelevant, you can ignore it but mention that you considered it.
+          - If an attachment is provided you must use it.Decode base64 and use it.
           - have a look at the checks and do the needful
           - Review the checks carefully and apply them to your analysis.
           """
@@ -642,7 +643,7 @@ async def round_2_task(body,secret_key):
   - attachement is given in base64 decode it and use it if url is given then fetch the data from url
   - Only modify files necessary for the task described.
   - Keep the rest of the code unchanged.
-  - If an attachment or part of the project is irrelevant, mention that you considered it.
+  - If an attachment is provided you must use it.Decode base64 and use it.
   - Your response should clearly indicate which files are being updated and what changes are being made.
   - Also upadate the README.md to reflect any new features or changes.
   -keeping all above conditons in mind please do the following task:
@@ -772,7 +773,7 @@ async def compute_metrics(request: Request,background_tasks: BackgroundTasks):
           Instructions:
           - Analyze or extract information from the attachments if relevant.
           - Combine your findings with the main brief.
-          - If an attachment is irrelevant, you can ignore it but mention that you considered it.
+          - If an attachment is provided you must use it.
           """
         else:
           user_message = user_brief  # no attachments
