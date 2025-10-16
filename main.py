@@ -505,19 +505,19 @@ async def round_1_task(body,secret_key,ROUND1_STATE={}):
     print("Inside background Task ######",user_message)
     def run_chat():
     try:
-        resp = client.chat.completions(
-            model="openai/gpt-4o",
-            messages=[
+      resp = client.chat.completions(
+          model="openai/gpt-4o",
+          messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_message}
             ],
             temperature=0.4
-        )
-        print("LLM response raw:", resp)
-        return resp
+      )
+      print("LLM response raw:", resp)
+      return resp
     except Exception as e:
-        print("LLM call failed as too large to handle:", e)
-        raise
+      print("LLM call failed as too large to handle:", e)
+      raise
 
     response = await asyncio.to_thread(run_chat)
     raw_output = response['choices'][0]['message']['content']
@@ -662,19 +662,19 @@ async def round_2_task(body,secret_key):
     SYSTEM_PROMPT = SYSTEM_PROMPT_ROUND2
     def run_chat():
     try:
-        resp = client.chat.completions(
-            model="openai/gpt-4o",
-            messages=[
+      resp = client.chat.completions(
+          model="openai/gpt-4o",
+          messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_message}
-            ],
-            temperature=0.4
-        )
-        print("LLM response raw:", resp)
-        return resp
+          ],
+          temperature=0.4
+      )
+      print("LLM response raw:", resp)
+      return resp
     except Exception as e:
-        print("LLM call failed as too large to handle:", e)
-        raise
+      print("LLM call failed as too large to handle:", e)
+      raise
 
     response = await asyncio.to_thread(run_chat)
     raw_output = response['choices'][0]['message']['content']
