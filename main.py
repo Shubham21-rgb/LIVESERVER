@@ -522,7 +522,7 @@ async def round_1_task(body,secret_key,ROUND1_STATE={}):
         raise
 
     response = await asyncio.to_thread(run_chat)
-    raw_output = response['choice'][0]['message']['content']
+    raw_output = response['choices'][0]['message']['content']
     try:
       project = json.loads(cleaned_output)
     except json.JSONDecodeError as e:
@@ -679,7 +679,7 @@ async def round_2_task(body,secret_key):
         raise
 
     response = await asyncio.to_thread(run_chat)
-    raw_output = response['choice'][0]['message']['content']
+    raw_output = response['choices'][0]['message']['content']
     try:
       project = json.loads(cleaned_output)
     except json.JSONDecodeError as e:
