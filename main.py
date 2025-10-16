@@ -522,6 +522,7 @@ async def round_1_task(body,secret_key,ROUND1_STATE={}):
         raise
 
     response = await asyncio.to_thread(run_chat)
+    print("############Response from LLM**********",response)
     raw_output = response['choices'][0]['message']['content']
     try:
       project = json.loads(cleaned_output)
@@ -679,6 +680,7 @@ async def round_2_task(body,secret_key):
         raise
 
     response = await asyncio.to_thread(run_chat)
+    print("############3**********",response)
     raw_output = response['choices'][0]['message']['content']
     try:
       project = json.loads(cleaned_output)
