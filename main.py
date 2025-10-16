@@ -499,6 +499,7 @@ async def round_1_task(body,secret_key,ROUND1_STATE={}):
           - Analyze or extract information from the attachments if relevant.
           - Combine your findings with the main brief.
           - If an attachment is provided you must use it.Decode base64 and use it.
+          - If attachments are very large, process them logically in parts and summarize results to fit JSON format.
           - have a look at the checks and do the needful
           - Review the checks carefully and apply them to your analysis.
           """
@@ -644,6 +645,7 @@ async def round_2_task(body,secret_key):
   - Only modify files necessary for the task described.
   - Keep the rest of the code unchanged.
   - If an attachment is provided you must use it.Decode base64 and use it.
+  - If attachments are very large, process them logically in parts and summarize results to fit JSON format.
   - Your response should clearly indicate which files are being updated and what changes are being made.
   - Also upadate the README.md to reflect any new features or changes.
   -keeping all above conditons in mind please do the following task:
