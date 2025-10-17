@@ -530,7 +530,7 @@ async def round_1_task(body,secret_key,ROUND1_STATE={}):
     def run_chat():
       try:
         resp = client.chat.completions(
-          model="openai/gpt-4o-mini",
+          model="openai/gpt-4o",
           messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_message}
@@ -693,7 +693,7 @@ async def round_2_task(body,secret_key):
     def run_chat():
       try:
         resp = client.chat.completions(
-          model="openai/gpt-4o-mini",
+          model="openai/gpt-4o",
           messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_message}
