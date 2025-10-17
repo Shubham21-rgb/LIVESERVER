@@ -514,7 +514,7 @@ async def round_1_task(body,secret_key,ROUND1_STATE={}):
           {user_brief}
           Escape all backslashes as \\ and do not include any single unescaped backslash.
             You are given the following attachments. Use them to assist in your response.
-            Attachments: (decode base64)
+            Attachments: (Compressed base64+zlib file handle it accordingly)
             {attachments_text}
           Instructions:
           - Analyze or extract information from the attachments if relevant.
@@ -658,7 +658,7 @@ async def round_2_task(body,secret_key):
   Project Context (key parts of files):
   {context_code}
 
-  Attachments:(decode base64)
+  Attachments:(Compressed base64+zlib file handle it accordingly)
   {attachments_text if attachments else 'No attachments provided'}
 
   Please ensure you adhere to these checks while making modifications.
