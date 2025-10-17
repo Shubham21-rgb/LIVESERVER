@@ -60,11 +60,7 @@ Your responsibilities:
 {checks_text}
 
 
-6.If any attachments are provided:
-- Decode Base64 and use their contents as needed for the task.
-- Include them in the generated repository under their original names.
-- Compute any values (totals, summaries, etc.) during generation and embed them in the HTML/JS as needed.
-- ignore if it consits of malformed rows or data.
+6.If any attachments are provided those needs to be load from the repository
 
 
 7. Return your output as **valid JSON** in this structure:
@@ -106,7 +102,7 @@ Instructions:
     {{"path": "LICENSE", "content": "MIT License text"}}
   ]
 }}
-7.Look for attachments if any and use them to assist you in your task.
+7.Look for attachments if any,those needs to be load from the repository
 Rules:
 - Only include changed or new files.
 - Preserve all other files from the previous round as-is.
@@ -551,6 +547,17 @@ async def round_1_task(body,secret_key,ROUND1_STATE={}):
 
         # Check attachments
     attachments = body.get("attachments", [])
+    attachment_data=[]
+    for idx, att in enumerate(attachments, 1):
+      if "," in att["url"]:
+        b64_data = att["url"].split(",", 1)[1]
+      else:
+        b64_data = att["url"]
+      if att['name'].endswith('.csv') or att['name'].endswith('.txt') or att['name'].endswith('.md'):
+        attachment_data.append({
+          "name": att['name'],
+          "compressed_data": b64_data
+        })
     remote_url=body.get("evaluation_url","")
     if attachments:
       attachments_text = ""
@@ -665,6 +672,16 @@ async def round_1_task(body,secret_key,ROUND1_STATE={}):
       print("Your site URL:", response.json().get("html_url"))
     else:
       print("Error enabling Pages:", response.json())
+    print("Project files: ", project["files"])
+    for indx, project_file_data in enumerate(project['files'][:]):
+      project_file_name = project_file_data['path']
+      for attd in attachment_data:
+        attd_name = attd['name']
+        attd_cdata = attd['compressed_data']
+        if project_file_name == attd_name:
+          project['files'][indx]['content'] = base64.b64decode(attd_cdata.encode('utf-8')).decode('utf-8')
+
+
     commit_sha,pages_url,folder=push_to_repo(repo.clone_url, project["files"])
     ROUND1_STATE[body["task"]] = {"folder": folder, "project": project}
     ROUND1_STATE['repo']=repo.clone_url
@@ -694,6 +711,17 @@ async def round_2_task(body,secret_key):
 
         # Check attachments
     attachments = body.get("attachments", [])
+    attachment_data=[]
+    for idx, att in enumerate(attachments, 1):
+      if "," in att["url"]:
+        b64_data = att["url"].split(",", 1)[1]
+      else:
+        b64_data = att["url"]
+      if att['name'].endswith('.csv') or att['name'].endswith('.txt') or att['name'].endswith('.md'):
+        attachment_data.append({
+          "name": att['name'],
+          "compressed_data": b64_data
+        })
 
     with open("/tmp/ROUND1_STATE.json") as f:
       ROUND1_STATE = json.load(f)
@@ -809,6 +837,14 @@ async def round_2_task(body,secret_key):
 
       project = json.loads(raw_output)
       print("✅ Parsed JSON successfully!")
+      for indx, project_file_data in enumerate(project['files'][:]):
+        project_file_name = project_file_data['path']
+        for attd in attachment_data:
+          attd_name = attd['name']
+          attd_cdata = attd['compressed_data']
+          if project_file_name == attd_name:
+            project['files'][indx]['content'] = base64.b64decode(attd_cdata.encode('utf-8')).decode('utf-8')
+      
     except Exception as e:
       import traceback; traceback.print_exc()
       return JSONResponse(
