@@ -470,7 +470,23 @@ async def preflight(request: Request):
         content=""
     )
 
-import re
+import base64, zlib
+
+def compress_b64(b64_data: str) -> str:
+    """Compress a base64 string into a smaller base64-safe text."""
+    # Step 1: Decode original base64 to bytes
+    raw = base64.b64decode(b64_data)
+    # Step 2: Compress bytes
+    compressed = zlib.compress(raw, level=9)
+    # Step 3: Encode compressed bytes again to base64 text
+    return base64.b64encode(compressed).decode('utf-8')
+
+def decompress_b64(b64_compressed: str) -> str:
+    """Reverse of compress_b64."""
+    compressed_bytes = base64.b64decode(b64_compressed)
+    decompressed_bytes = zlib.decompress(compressed_bytes)
+    return base64.b64encode(decompressed_bytes).decode('utf-8')
+
 
 ################################# Background Task to handle the request asynchronously ##############################
 async def round_1_task(body,secret_key,ROUND1_STATE={}):
@@ -484,17 +500,22 @@ async def round_1_task(body,secret_key,ROUND1_STATE={}):
       attachments_text = ""
       for idx, att in enumerate(attachments, 1):
         attachments_text += f"{idx}. Name: {att['name']}\n"
-        attachments_text += f"   Data (base64): {att['url']}\n\n"
+        if "," in att["url"]:
+          b64_data = att["url"].split(",", 1)[1]
+        else:
+          b64_data = att["url"]
+        compressed_data = compress_b64(b64_data)
 
-            # Prompt tells model to use attachments
+        attachments_text += f"   Data (compressed_b64): {compressed_data}\n\n"
+
+      print("############3**********",attachments_text)
+        
       user_message = f"""
           {user_brief}
           Escape all backslashes as \\ and do not include any single unescaped backslash.
             You are given the following attachments. Use them to assist in your response.
             Attachments: (decode base64)
             {attachments_text}
-            Checks to apply:Only include this section if there are actual checks.
-            {body.get("checks", [])}
           Instructions:
           - Analyze or extract information from the attachments if relevant.
           - Combine your findings with the main brief.
@@ -509,7 +530,7 @@ async def round_1_task(body,secret_key,ROUND1_STATE={}):
     def run_chat():
       try:
         resp = client.chat.completions(
-          model="openai/gpt-4o",
+          model="openai/gpt-4o-mini",
           messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_message}
@@ -615,7 +636,13 @@ async def round_2_task(body,secret_key):
       attachments_text = ""
       for idx, att in enumerate(attachments, 1):
         attachments_text += f"{idx}. Name: {att['name']}\n"
-        attachments_text += f"   Data (base64): {att['url']}\n\n"
+        if "," in att["url"]:
+          b64_data = att["url"].split(",", 1)[1]
+        else:
+          b64_data = att["url"]
+        compressed_data = compress_b64(b64_data)
+
+        attachments_text += f"   Data (compressed_b64): {compressed_data}\n\n"
 
             # Prompt tells model to use attachments
       user_message = f"""
@@ -634,8 +661,6 @@ async def round_2_task(body,secret_key):
   Attachments:(decode base64)
   {attachments_text if attachments else 'No attachments provided'}
 
-  Please note the following checks to apply:Only include this section if there are actual checks.
-  {body.get("checks", [])}
   Please ensure you adhere to these checks while making modifications.
   No other files should be changed.
 
@@ -668,7 +693,7 @@ async def round_2_task(body,secret_key):
     def run_chat():
       try:
         resp = client.chat.completions(
-          model="openai/gpt-4o",
+          model="openai/gpt-4o-mini",
           messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_message}
