@@ -10,7 +10,7 @@ import requests
 app = FastAPI()
 load_dotenv()  # Load environment variables from .env file
 
-api_key=os.getenv("AI_PIPE_TOKEN_1")
+api_key=os.getenv("AI_PIPE_TOKEN")
 '''
 headers = {
     "Authorization": f"Bearer {api_key}",
