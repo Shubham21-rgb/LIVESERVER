@@ -10,7 +10,7 @@ import requests
 app = FastAPI()
 load_dotenv()  # Load environment variables from .env file
 
-api_key=os.getenv("AI_PIPE_TOKEN")
+api_key=os.getenv("AI_PIPE_TOKEN_1")
 '''
 headers = {
     "Authorization": f"Bearer {api_key}",
@@ -59,7 +59,15 @@ Your responsibilities:
 5.Checks to apply:
 {checks_text}
 
-6. Return your output as **valid JSON** in this structure:
+
+6.If any attachments are provided:
+- Decode Base64 and use their contents as needed for the task.
+- Include them in the generated repository under their original names.
+- Compute any values (totals, summaries, etc.) during generation and embed them in the HTML/JS as needed.
+- ignore if it consits of malformed rows or data.
+
+
+7. Return your output as **valid JSON** in this structure:
 {{
   "repo_name": "string",
   "description": "string",
@@ -67,9 +75,10 @@ Your responsibilities:
     {{"path": "index.html", "content": "..."}},
     {{"path": "README.md", "content": "..."}},
     {{"path": "LICENSE", "content": "MIT License text"}}
+    {{"path": "<attachment_file_name>", "content": "<decoded_base64_content>"}}
   ]
 }}
-7.Look for attachments if any and use them to assist you in your task.
+
 
 Rules(IMPORTANT):
 - Mandatory needs to do all things in checks if possible (main).
@@ -141,6 +150,7 @@ class AIPipeClient:
 
 #from openai import OpenAI
 #api_key = os.getenv("OPENAI_API_KEY")
+#api_key=os.getenv("AI_PIPE_TOKEN_1")
 client = AIPipeClient(api_key)
 
 
@@ -487,6 +497,52 @@ def decompress_b64(b64_compressed: str) -> str:
     decompressed_bytes = zlib.decompress(compressed_bytes)
     return base64.b64encode(decompressed_bytes).decode('utf-8')
 
+def summarize_attachment(b64_compressed, name, max_chunk=3000):
+    """
+    Decompress and summarize an attachment.
+    Works for:
+      - CSV files (first few rows)
+      - Text files (first few chunks)
+      - Image files (format, dimensions, size)
+      - Other binary files (size only)
+    """
+    decompressed_b64 = decompress_b64(b64_compressed)
+    raw_bytes = base64.b64decode(decompressed_b64)
+
+    # CSV preview
+    if name.lower().endswith('.csv'):
+        try:
+            text = raw_bytes.decode('utf-8', errors='ignore')
+            reader = csv.reader(io.StringIO(text))
+            rows = list(reader)[:5]
+            preview = "\n".join([", ".join(row) for row in rows])
+            return f"{name} (CSV preview):\n{preview}\n..."
+        except Exception:
+            pass
+
+    # Image preview
+    if name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
+        try:
+            img = Image.open(io.BytesIO(raw_bytes))
+            width, height = img.size
+            fmt = img.format
+            return f"{name} (image summary): {fmt}, {width}x{height}px, {len(raw_bytes)} bytes"
+        except Exception:
+            pass
+
+    # Text files
+    try:
+        text = raw_bytes.decode('utf-8', errors='ignore')
+        summary_chunks = []
+        for i in range(0, len(text), max_chunk):
+            chunk = text[i:i+max_chunk]
+            summary_chunks.append(chunk[:200] + "..." if len(chunk) > 200 else chunk)
+        return f"{name} (text summary):\n" + "\n".join(summary_chunks)
+    except UnicodeDecodeError:
+        pass
+
+    # Other binary files
+    return f"{name} (binary data): {len(raw_bytes)} bytes"
 
 ################################# Background Task to handle the request asynchronously ##############################
 async def round_1_task(body,secret_key,ROUND1_STATE={}):
@@ -506,8 +562,8 @@ async def round_1_task(body,secret_key,ROUND1_STATE={}):
           b64_data = att["url"]
         compressed_data = compress_b64(b64_data)
 
-        attachments_text += f"   Data (compressed_b64): {compressed_data}\n\n"
-
+        summary = summarize_attachment(compressed_data, att['name'])
+        attachments_text += f"{idx}. {summary}\n\n"
       print("############3**********",attachments_text)
         
       user_message = f"""
@@ -519,7 +575,7 @@ async def round_1_task(body,secret_key,ROUND1_STATE={}):
           Instructions:
           - Analyze or extract information from the attachments if relevant.
           - Combine your findings with the main brief.
-          - If an attachment is provided you must use it.Decode base64 and use it.
+          - If an attachment is provided you must use it.and igonre the malfored rows or data.
           - If attachments are very large, process them logically in parts and summarize results to fit JSON format.
           - have a look at the checks and do the needful
           - Review the checks carefully and apply them to your analysis.
@@ -543,16 +599,38 @@ async def round_1_task(body,secret_key,ROUND1_STATE={}):
         print("LLM call failed as too large to handle:", e)
         raise
 
-    response = await asyncio.to_thread(run_chat)
-    print("############Response from LLM**********",response)
-    raw_output = response['choices'][0]['message']['content']
     try:
-      project = json.loads(cleaned_output)
-    except json.JSONDecodeError as e:
+      response = await asyncio.to_thread(run_chat)
+    except Exception as e:
+      print("Threaded LLM call failed:", e)
+      return JSONResponse(content={"error": str(e)}, status_code=500)
+    try:
+      if isinstance(response, dict):
+        raw_output = response['choices'][0]['message']['content']
+      else:
+        raw_output = response.choices[0].message.content
+
+      print("Raw LLM output snippet:", raw_output[:500])
+
+    # Remove markdown wrappers
+      raw_output = raw_output.strip()
+      if raw_output.startswith("```"):
+        raw_output = raw_output.strip("`")
+        if raw_output.lower().startswith("json"):
+            raw_output = raw_output[4:].strip()
+      if raw_output.endswith("```"):
+        raw_output = raw_output[:-3].strip()
+
+      project = json.loads(raw_output)
+      print("✅ Parsed JSON successfully!")
+    except Exception as e:
+      import traceback; traceback.print_exc()
       return JSONResponse(
-                content={"error": f"Invalid JSON output from model: {e}", "raw_output": raw_output},
-                status_code=500
+        content={"error": f"Failed to parse model output: {str(e)}",
+                 "raw_output": raw_output},
+        status_code=500
       )
+
     token = os.getenv("GITHUB_TOKEN")
     g = Github(token)
     username="Shubham21-rgb"
@@ -641,8 +719,9 @@ async def round_2_task(body,secret_key):
         else:
           b64_data = att["url"]
         compressed_data = compress_b64(b64_data)
+        summary = summarize_attachment(compressed_data, att['name'])
+        attachments_text += f"{idx}. {summary}\n\n"
 
-        attachments_text += f"   Data (compressed_b64): {compressed_data}\n\n"
 
             # Prompt tells model to use attachments
       user_message = f"""
@@ -706,11 +785,39 @@ async def round_2_task(body,secret_key):
         print("LLM call failed as too large to handle:", e)
         raise
 
-    response = await asyncio.to_thread(run_chat)
-    print("############3**********",response)
-    raw_output = response['choices'][0]['message']['content']
     try:
-      project = json.loads(cleaned_output)
+      response = await asyncio.to_thread(run_chat)
+    except Exception as e:
+      print("Threaded LLM call failed:", e)
+      return JSONResponse(content={"error": str(e)}, status_code=500)
+    try:
+      if isinstance(response, dict):
+        raw_output = response['choices'][0]['message']['content']
+      else:
+        raw_output = response.choices[0].message.content
+
+      print("Raw LLM output snippet:", raw_output[:500])
+
+    # Remove markdown wrappers
+      raw_output = raw_output.strip()
+      if raw_output.startswith("```"):
+        raw_output = raw_output.strip("`")
+        if raw_output.lower().startswith("json"):
+            raw_output = raw_output[4:].strip()
+      if raw_output.endswith("```"):
+        raw_output = raw_output[:-3].strip()
+
+      project = json.loads(raw_output)
+      print("✅ Parsed JSON successfully!")
+    except Exception as e:
+      import traceback; traceback.print_exc()
+      return JSONResponse(
+        content={"error": f"Failed to parse model output: {str(e)}",
+                 "raw_output": raw_output},
+        status_code=500
+      )
+    try:
+      project = json.loads(raw_output)
     except json.JSONDecodeError as e:
       return JSONResponse(
           content={"error": f"Invalid JSON output from model: {e}", "raw_output": raw_output},
